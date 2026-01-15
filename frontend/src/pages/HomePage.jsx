@@ -18,17 +18,16 @@ const HomePage = () => {
     if (!session) navigate('/auth');
   }, [session, navigate]);
 
-  // --- HÀM XỬ LÝ NHẬN DIỆN (ĐÃ CẬP NHẬT) ---
+  // --- HÀM XỬ LÝ NHẬN DIỆN (ĐÃ ĐỒNG BỘ VỚI BIẾN KANJI) ---
   const handleIdentify = async () => {
     if (!canvasRef.current) return;
     setIsAnalyzing(true);
     
-    // 1. Lấy ảnh từ Canvas
+    // 1. Lấy ảnh từ Canvas (đã có xử lý nền trắng)
     const imageData = canvasRef.current.getCanvasImage();
 
     try {
-      // 2. Gọi API lên Server Render (Node.js + Gemini)
-      // 👇 LINK SERVER MỚI CỦA BẠN 👇
+      // 2. Gọi API lên Server Render
       const response = await fetch('https://pbl3-sofd.onrender.com/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -37,12 +36,12 @@ const HomePage = () => {
 
       const data = await response.json();
 
-      if (response.ok && data.result) {
-        const charAI = data.result; // Gemini trả về ký tự Kanji tại đây
-        console.log("Gemini nhận diện được:", charAI);
+      // CẬP NHẬT: Kiểm tra thuộc tính 'kanji' thay vì 'result' để khớp với Server
+      if (response.ok && data.kanji) {
+        const charAI = data.kanji; 
+        console.log("Gemini nhận diện thành công:", charAI);
 
-        // 3. Tra cứu thông tin chi tiết trong file JSON (để lấy nghĩa, âm đọc)
-        // Vì Gemini chỉ trả về mặt chữ, ta vẫn cần từ điển để hiển thị chi tiết
+        // 3. Tra cứu thông tin chi tiết trong file JSON offline
         const found = kanjiDictionary.find(item => item.kanji === charAI);
         
         if (found) {
@@ -54,22 +53,23 @@ const HomePage = () => {
             onyomi: found.onyomi
           });
         } else {
-          // Trường hợp AI nhận ra chữ nhưng từ điển chưa có
+          // Trường hợp AI nhận diện đúng nhưng từ điển offline chưa có dữ liệu
           setSelectedKanji({
             char: charAI,
-            hanviet: "TRA CỨU ONLINE",
-            mean: "Chưa có dữ liệu chi tiết trong từ điển offline.",
+            hanviet: "TRA CỨU THÊM",
+            mean: "Chữ này hiện chưa có trong từ điển offline của hệ thống.",
             kunyomi: "...",
             onyomi: "..."
           });
         }
       } else {
+        // Hiển thị thông báo lỗi cụ thể từ Server nếu có
         alert("Lỗi: " + (data.error || "Không nhận diện được hình vẽ"));
       }
 
     } catch (error) {
       console.error("Lỗi kết nối:", error);
-      alert("Không kết nối được với Server Render. Vui lòng thử lại!");
+      alert("Không kết nối được với Server Render. Hãy đảm bảo Server đang hoạt động!");
     } finally {
       setIsAnalyzing(false);
     }
@@ -103,12 +103,20 @@ const HomePage = () => {
         </div>
         <nav className="flex-1 px-4 mt-4 space-y-1">
           {menuItems.map((item) => (
-            <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === item.id ? 'bg-[#1e293b] text-white' : 'text-slate-400 hover:bg-slate-50'}`}>
+            <button 
+              key={item.id} 
+              onClick={() => setActiveTab(item.id)} 
+              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === item.id ? 'bg-[#1e293b] text-white' : 'text-slate-400 hover:bg-slate-50'}`}
+            >
               <span>{item.icon}</span> <span className="hidden lg:block">{item.label}</span>
             </button>
           ))}
         </nav>
-        <div className="p-6 border-t"><button onClick={handleLogout} className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-red-500 w-full text-left">LOGOUT</button></div>
+        <div className="p-6 border-t">
+          <button onClick={handleLogout} className="text-xs font-black text-slate-400 uppercase tracking-widest hover:text-red-500 w-full text-left">
+            LOGOUT
+          </button>
+        </div>
       </aside>
 
       {/* MAIN CONTENT */}
@@ -130,7 +138,11 @@ const HomePage = () => {
                        <KanjiCanvas ref={canvasRef} /> 
                     </div>
                     <div className="mt-6 flex gap-4">
-                      <button onClick={handleIdentify} disabled={isAnalyzing} className="flex-[3] py-5 bg-[#0F172A] text-white rounded-[1.2rem] font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg">
+                      <button 
+                        onClick={handleIdentify} 
+                        disabled={isAnalyzing} 
+                        className="flex-[3] py-5 bg-[#0F172A] text-white rounded-[1.2rem] font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg"
+                      >
                         {isAnalyzing ? 'ĐANG XỬ LÝ...' : 'NHẬN DIỆN (GEMINI AI)'}
                       </button>
                       <button onClick={() => canvasRef.current.clear()} className="flex-1 py-5 bg-slate-50 text-slate-400 rounded-[1.2rem] font-black text-[10px] uppercase hover:bg-slate-100">XÓA</button>
@@ -169,7 +181,9 @@ const HomePage = () => {
                       </div>
                     </div>
 
-                    <button onClick={handleAnalysis} className="mt-6 w-full py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-100">🔍 PHÂN TÍCH NGUỒN GỐC</button>
+                    <button onClick={handleAnalysis} className="mt-6 w-full py-4 bg-indigo-50 text-indigo-600 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-100">
+                      🔍 PHÂN TÍCH NGUỒN GỐC
+                    </button>
                   </div>
                 </div>
               </>
@@ -181,4 +195,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;//
+export default HomePage;
