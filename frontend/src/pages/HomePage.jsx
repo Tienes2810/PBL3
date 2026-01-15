@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import KanjiCanvas from '../components/KanjiCanvas';
-// Import file từ điển vừa tạo
+// Import file từ điển json
 import kanjiDictionary from '../utils/kanji-dictionary.json'; 
 
 const HomePage = () => {
@@ -18,27 +18,31 @@ const HomePage = () => {
     if (!session) navigate('/auth');
   }, [session, navigate]);
 
+  // --- HÀM XỬ LÝ NHẬN DIỆN (ĐÃ CẬP NHẬT) ---
   const handleIdentify = async () => {
     if (!canvasRef.current) return;
     setIsAnalyzing(true);
     
-    // 1. Lấy ảnh
+    // 1. Lấy ảnh từ Canvas
     const imageData = canvasRef.current.getCanvasImage();
 
     try {
-      // 2. Gọi Server Python
-      const response = await fetch('http://127.0.0.1:5000/predict', {
+      // 2. Gọi API lên Server Render (Node.js + Gemini)
+      // 👇 LINK SERVER MỚI CỦA BẠN 👇
+      const response = await fetch('https://pbl3-sofd.onrender.com/api/ocr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: imageData }),
       });
 
-      const result = await response.json();
+      const data = await response.json();
 
-      if (result.status === 'success') {
-        const charAI = result.character; // Ví dụ nhận được "Mộc" (木)
+      if (response.ok && data.result) {
+        const charAI = data.result; // Gemini trả về ký tự Kanji tại đây
+        console.log("Gemini nhận diện được:", charAI);
 
-        // 3. Tra cứu trong file JSON
+        // 3. Tra cứu thông tin chi tiết trong file JSON (để lấy nghĩa, âm đọc)
+        // Vì Gemini chỉ trả về mặt chữ, ta vẫn cần từ điển để hiển thị chi tiết
         const found = kanjiDictionary.find(item => item.kanji === charAI);
         
         if (found) {
@@ -50,19 +54,22 @@ const HomePage = () => {
             onyomi: found.onyomi
           });
         } else {
-          // Trường hợp AI trả về chữ lạ
+          // Trường hợp AI nhận ra chữ nhưng từ điển chưa có
           setSelectedKanji({
             char: charAI,
-            hanviet: "CHƯA CÓ",
-            mean: "Chưa có dữ liệu trong bộ test.",
+            hanviet: "TRA CỨU ONLINE",
+            mean: "Chưa có dữ liệu chi tiết trong từ điển offline.",
             kunyomi: "...",
             onyomi: "..."
           });
         }
+      } else {
+        alert("Lỗi: " + (data.error || "Không nhận diện được hình vẽ"));
       }
+
     } catch (error) {
-      console.error("Lỗi:", error);
-      alert("Lỗi kết nối Server Python (127.0.0.1:5000).");
+      console.error("Lỗi kết nối:", error);
+      alert("Không kết nối được với Server Render. Vui lòng thử lại!");
     } finally {
       setIsAnalyzing(false);
     }
@@ -124,7 +131,7 @@ const HomePage = () => {
                     </div>
                     <div className="mt-6 flex gap-4">
                       <button onClick={handleIdentify} disabled={isAnalyzing} className="flex-[3] py-5 bg-[#0F172A] text-white rounded-[1.2rem] font-black text-xs uppercase tracking-widest hover:opacity-90 active:scale-95 transition-all shadow-lg">
-                        {isAnalyzing ? 'ĐANG XỬ LÝ...' : 'NHẬN DIỆN'}
+                        {isAnalyzing ? 'ĐANG XỬ LÝ...' : 'NHẬN DIỆN (GEMINI AI)'}
                       </button>
                       <button onClick={() => canvasRef.current.clear()} className="flex-1 py-5 bg-slate-50 text-slate-400 rounded-[1.2rem] font-black text-[10px] uppercase hover:bg-slate-100">XÓA</button>
                     </div>
