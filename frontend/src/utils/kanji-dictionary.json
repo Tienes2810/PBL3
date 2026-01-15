@@ -1,0 +1,82 @@
+[
+  {
+    "kanji": "日",
+    "hanviet": "NHẬT",
+    "mean": "Mặt trời, ngày, chủ nhật",
+    "onyomi": "NICHI, JITSU",
+    "kunyomi": "hi, -bi, -ka",
+    "level": "N5"
+  },
+  {
+    "kanji": "月",
+    "hanviet": "NGUYỆT",
+    "mean": "Mặt trăng, tháng, thứ hai",
+    "onyomi": "GETSU, GATSU",
+    "kunyomi": "tsuki",
+    "level": "N5"
+  },
+  {
+    "kanji": "火",
+    "hanviet": "HỎA",
+    "mean": "Lửa, thứ ba",
+    "onyomi": "KA",
+    "kunyomi": "hi, -bi, ho-",
+    "level": "N5"
+  },
+  {
+    "kanji": "水",
+    "hanviet": "THỦY",
+    "mean": "Nước, thứ tư",
+    "onyomi": "SUI",
+    "kunyomi": "mizu",
+    "level": "N5"
+  },
+  {
+    "kanji": "木",
+    "hanviet": "MỘC",
+    "mean": "Cây, gỗ, thứ năm",
+    "onyomi": "MOKU, BOKU",
+    "kunyomi": "ki, ko-",
+    "level": "N5"
+  },
+  {
+    "kanji": "金",
+    "hanviet": "KIM",
+    "mean": "Vàng, tiền, thứ sáu",
+    "onyomi": "KIN, KON",
+    "kunyomi": "kane, kana-",
+    "level": "N5"
+  },
+  {
+    "kanji": "土",
+    "hanviet": "THỔ",
+    "mean": "Đất, thứ bảy",
+    "onyomi": "DO, TO",
+    "kunyomi": "tsuchi",
+    "level": "N5"
+  },
+  {
+    "kanji": "学",
+    "hanviet": "HỌC",
+    "mean": "Học tập, khoa học",
+    "onyomi": "GAKU",
+    "kunyomi": "mana.bu",
+    "level": "N5"
+  },
+  {
+    "kanji": "人",
+    "hanviet": "NHÂN",
+    "mean": "Người",
+    "onyomi": "JIN, NIN",
+    "kunyomi": "hito",
+    "level": "N5"
+  },
+  {
+    "kanji": "大",
+    "hanviet": "ĐẠI",
+    "mean": "To lớn",
+    "onyomi": "DAI, TAI",
+    "kunyomi": "oo-, oo.kii",
+    "level": "N5"
+  }
+]

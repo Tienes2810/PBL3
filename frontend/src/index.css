@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- KANJI BAY (RÕ NÉT TUYỆT ĐỐI) --- */
+.kanji-float {
+  position: absolute;
+  /* Bắt đầu thấp hơn nữa để đảm bảo không bị "mọc" ra từ giữa màn hình */
+  bottom: -50vh; 
+  color: #000000; /* Đen tuyệt đối cho rõ */
+  user-select: none;
+  pointer-events: none;
+  
+  animation-name: floatUp; 
+  animation-timing-function: linear; /* Tốc độ đều đặn */
+  animation-iteration-count: infinite;
+  
+  font-family: 'Yuji Syuku', serif; 
+  
+  /* Bỏ bóng mờ hoặc làm bóng rất sắc để không bị nhòe */
+  text-shadow: none; 
+  
+  /* QUAN TRỌNG: Luôn hiển thị rõ 100% */
+  opacity: 1 !important; 
+  transform: translateX(-50%);
+}
+
+@keyframes floatUp {
+  0% {
+    /* Tại điểm xuất phát: Rõ nét 100% */
+    transform: translateX(-50%) translateY(0) rotate(-5deg);
+    opacity: 1; 
+  }
+  100% {
+    /* Tại điểm kết thúc (trên trời): Vẫn rõ nét 100% */
+    /* Bay cao hơn nữa (-200vh) để chắc chắn ra khỏi màn hình mới biến mất */
+    transform: translateX(-50%) translateY(-200vh) rotate(5deg);
+    opacity: 1; 
+  }
+}
+
+/* SHIBA NHÚN NHẢY */
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite ease-in-out;
+}
+
+/* ANIMATION KHÁC */
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-down {
+  animation: fadeInDown 0.3s ease-out forwards;
+}
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
