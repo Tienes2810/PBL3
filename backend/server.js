@@ -25,7 +25,7 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // --- KẾT NỐI GOOGLE GEMINI ---
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI("AIzaSyDXkEiT_48pHU8XbcNzedHoRE9klgxBnQA");
 
 // =======================
 // CÁC ROUTE API
