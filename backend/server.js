@@ -7,24 +7,22 @@ const kanjiDict = require("./kanji-dictionary.json");
 dotenv.config();
 const app = express();
 
-// Cấu hình CORS mở để Vercel không bị chặn
-app.use(cors({ origin: "*" })); 
+app.use(cors({ origin: "*" })); // Cho phép Vercel truy cập
 app.use(express.json({ limit: "10mb" }));
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// --- 1. ROUTE ĐĂNG NHẬP (Khớp với tiền tố /api) ---
+// --- 1. ROUTE ĐĂNG NHẬP (SỬA ĐỂ KHỚP VỚI FRONTEND) ---
+// Dùng /api/login để phân biệt với các route khác
 app.post("/api/login", (req, res) => {
     const { email, password } = req.body;
-    console.log("Đang xử lý đăng nhập cho:", email);
-    
     if (email && password) {
         res.json({ 
             message: "Thành công!",
-            session: { user: { email: email }, token: "pbl3-fixed-token" } 
+            session: { user: { email }, token: "fixed-token-pbl3" } 
         });
     } else {
-        res.status(400).json({ error: "Thiếu email hoặc mật khẩu" });
+        res.status(400).json({ error: "Thiếu thông tin đăng nhập" });
     }
 });
 
@@ -41,7 +39,6 @@ app.post("/api/ocr", async (req, res) => {
         ]);
 
         const chars = result.response.text().trim().split("").slice(0, 6);
-
         const candidates = chars.map(char => {
             const found = kanjiDict.find(item => item.kanji === char);
             return found || { kanji: char, hanviet: "MỚI", mean: "Dữ liệu AI" };
@@ -54,4 +51,4 @@ app.post("/api/ocr", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server LIVE tại ${PORT}`));
+app.listen(PORT, () => console.log(`Server LIVE tại cổng ${PORT}`));
