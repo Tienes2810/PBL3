@@ -11,7 +11,7 @@ app.use(cors({ origin: "*" })); // Cho phép Vercel truy cập
 app.use(express.json({ limit: "10mb" }));
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
+   
 // --- 1. ENDPOINT ĐĂNG NHẬP (GIẢ LẬP CHO PBL3) ---
 app.post("/api/login", (req, res) => {
     const { email, password } = req.body;
