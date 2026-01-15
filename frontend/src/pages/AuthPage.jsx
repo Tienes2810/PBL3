@@ -33,7 +33,6 @@ const AuthPage = () => {
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   
-  // --- STATES MỚI CHO LOGIC KẾT NỐI ---
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -79,12 +78,11 @@ const AuthPage = () => {
     setFloatingChars(chars);
   }, []);
 
-  // --- HÀM XỬ LÝ SUBMIT GỌI API BACKEND ---
+  // --- HÀM XỬ LÝ SUBMIT (ĐÃ SỬA ĐƯỜNG DẪN /API) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
-    // Kiểm tra confirm password khi đăng ký
     if (!isLogin && password !== confirmPassword) {
       setErrorMsg("Mật khẩu xác nhận không khớp!");
       return;
@@ -93,8 +91,8 @@ const AuthPage = () => {
     const endpoint = isLogin ? 'login' : 'register';
     
     try {
-      // Thay 'localhost' bằng '127.0.0.1' để ổn định hơn
-      const response = await fetch(`https://pbl3-sofd.onrender.com/${endpoint}`, {
+      // THÊM /api/ VÀO TRƯỚC ENDPOINT ĐỂ KHỚP VỚI SERVER
+      const response = await fetch(`https://pbl3-sofd.onrender.com/api/${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -103,26 +101,25 @@ const AuthPage = () => {
       const data = await response.json();
 
       if (response.ok) {
-        alert(data.message);
         if (isLogin) {
-          // Lưu session vào localStorage
           localStorage.setItem('session', JSON.stringify(data.session));
           navigate('/home');
         } else {
-          setIsLogin(true); // Chuyển sang tab đăng nhập sau khi đăng ký thành công
+          alert(data.message);
+          setIsLogin(true);
         }
       } else {
         setErrorMsg(data.error || "Có lỗi xảy ra!");
       }
     } catch (err) {
-      setErrorMsg("Không thể kết nối đến Server. Hãy kiểm tra Node.js!");
+      setErrorMsg("Không thể kết nối đến Server. Hãy đợi 30s để Render khởi động!");
     }
   };
 
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-gray-100 overflow-hidden font-sans">
       
-      {/* LANGUAGE MENU (TO GẤP ĐÔI) */}
+      {/* LANGUAGE MENU */}
       <div className="absolute top-6 right-6 z-50">
         <div className="relative">
           <button 
@@ -159,13 +156,11 @@ const AuthPage = () => {
 
       {/* MAIN CARD */}
       <div className="relative z-10 w-full max-w-[420px] flex flex-col items-center px-4">
-        
         <div className="z-20 -mb-7 pointer-events-none">
           <ShibaMascot />
         </div>
 
         <div className={`w-full bg-white px-8 ${isLogin ? 'py-8' : 'py-5'} rounded-[2.5rem] shadow-2xl border border-gray-100 relative z-10 transition-all`}>
-          
           <div className={`text-center ${isLogin ? 'mb-6' : 'mb-3'} mt-2`}>
             <h1 className="text-3xl font-black text-gray-900 mb-1 uppercase tracking-tight leading-tight">{t.title}</h1>
             <p className="text-gray-400 text-sm italic font-medium">{isLogin ? t.welcome : t.welcomeReg}</p>
@@ -176,7 +171,6 @@ const AuthPage = () => {
             <button onClick={() => { setIsLogin(false); setErrorMsg(''); }} className={`w-1/2 pb-2 text-sm font-bold transition-all ${!isLogin ? 'border-b-2 border-black text-black' : 'text-gray-300'}`}>{t.register}</button>
           </div>
 
-          {/* HIỂN THỊ LỖI NẾU CÓ */}
           {errorMsg && (
             <div className="mb-4 p-2 bg-red-50 border border-red-200 text-red-600 text-[10px] font-bold rounded-xl text-center animate-shake">
               {errorMsg}
@@ -210,38 +204,9 @@ const AuthPage = () => {
                   {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                 </button>
               </div>
-
-              {!isLogin && password.length > 0 && (
-                <div className="mt-2 px-1 animate-fade-in-down">
-                  <div className="flex gap-1 h-1 mb-1.5">
-                    <div className={`flex-1 rounded-full transition-colors ${strengthScore >= 1 ? 'bg-red-500' : 'bg-gray-200'}`}></div>
-                    <div className={`flex-1 rounded-full transition-colors ${strengthScore >= 2 ? 'bg-yellow-500' : 'bg-gray-200'}`}></div>
-                    <div className={`flex-1 rounded-full transition-colors ${strengthScore >= 3 ? 'bg-green-500' : 'bg-gray-200'}`}></div>
-                  </div>
-                  <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                    <span className={`text-[8.5px] flex items-center gap-1 ${password.length >= 8 ? 'text-green-600 font-bold' : 'text-gray-400'}`}>
-                      {password.length >= 8 ? '✓' : '○'} {t.ruleLength}
-                    </span>
-                    <span className={`text-[8.5px] flex items-center gap-1 ${/\d/.test(password) ? 'text-green-600 font-bold' : 'text-gray-400'}`}>
-                      {/\d/.test(password) ? '✓' : '○'} Chữ số
-                    </span>
-                    <span className={`text-[8.5px] flex items-center gap-1 ${/[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-600 font-bold' : 'text-gray-400'}`}>
-                      {/[!@#$%^&*(),.?":{}|<>]/.test(password) ? '✓' : '○'} Ký tự đặc biệt
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
 
-            {isLogin ? (
-              <div className="flex justify-between items-center text-xs px-1 font-medium pb-1">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input type="checkbox" className="w-4 h-4 border-gray-300 rounded text-black focus:ring-black cursor-pointer" />
-                  <span className="text-gray-400 group-hover:text-black transition-colors">{t.remember}</span>
-                </label>
-                <button type="button" onClick={() => navigate('/forgot-password')} className="text-gray-400 hover:text-black font-bold">{t.forgot}</button>
-              </div>
-            ) : (
+            {!isLogin && (
               <div className="animate-fade-in-down">
                 <label className="block text-[11px] font-bold text-gray-400 uppercase mb-1 ml-1">{t.confirm}</label>
                 <input 
@@ -257,25 +222,7 @@ const AuthPage = () => {
             <button type="submit" className="w-full bg-black text-white font-black py-5 rounded-2xl hover:bg-gray-800 transition-all active:scale-[0.98] shadow-xl uppercase tracking-widest text-base mt-2">
               {isLogin ? t.btnLogin : t.btnReg}
             </button>
-
-            <div className={`${isLogin ? 'mt-6' : 'mt-3'}`}>
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-100"></div></div>
-                <div className="relative flex justify-center text-[10px]"><span className="px-3 bg-white text-gray-400 font-bold uppercase tracking-widest">{t.orContinue}</span></div>
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-4">
-                <button type="button" className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all font-bold text-gray-700 text-xs shadow-sm"><GoogleIcon /> Google</button>
-                <button type="button" className="flex items-center justify-center gap-3 px-4 py-3 border border-gray-200 rounded-2xl hover:bg-gray-50 transition-all font-bold text-gray-700 text-xs shadow-sm"><FacebookIcon /> Facebook</button>
-              </div>
-            </div>
           </form>
-
-          <div className="mt-6 pt-4 border-t border-gray-50 flex justify-center gap-8 text-[11px] text-gray-300 font-bold uppercase tracking-widest">
-             <a href="#" className="hover:text-black transition-colors">TERMS</a>
-             <a href="#" className="hover:text-black transition-colors">PRIVACY</a>
-             <a href="#" className="hover:text-black transition-colors">HELP</a>
-          </div>
         </div>
       </div>
     </div>
