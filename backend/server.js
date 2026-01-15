@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-// SỬ DỤNG CHÍNH XÁC THƯ VIỆN BẠN YÊU CẦU
-const { GoogleGenAI } = require("@google/genai"); 
+const { GoogleGenAI } = require("@google/genai"); // Sử dụng thư viện bạn yêu cầu
 const kanjiDict = require("./kanji-dictionary.json");
 
 dotenv.config();
@@ -11,10 +10,10 @@ const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "10mb" }));
 
-// Khởi tạo Google AI với API Key từ Environment trên Render
+// Khởi tạo AI
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// --- 1. ROUTE ĐĂNG NHẬP (Fix lỗi 404) ---
+// --- ROUTE ĐĂNG NHẬP (Fix lỗi 404) ---
 app.post("/api/login", (req, res) => {
     const { email, password } = req.body;
     if (email && password) {
@@ -23,11 +22,11 @@ app.post("/api/login", (req, res) => {
             session: { user: { email }, token: "pbl3-auth-token-fixed" } 
         });
     } else {
-        res.status(400).json({ error: "Vui lòng nhập đầy đủ email và mật khẩu" });
+        res.status(400).json({ error: "Thiếu thông tin đăng nhập" });
     }
 });
 
-// --- 2. ROUTE OCR KANJI (Dùng model gemini-2.5-flash) ---
+// --- ROUTE OCR KANJI (Fix lỗi is not a function) ---
 app.post("/api/ocr", async (req, res) => {
     try {
         const { image } = req.body;
@@ -35,8 +34,8 @@ app.post("/api/ocr", async (req, res) => {
 
         const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
 
-        // Gọi model gemini-2.5-flash theo yêu cầu
-        const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
+        // SỬA LỖI: Truy cập getGenerativeModel thông qua generativeAI
+        const model = ai.generativeAI.getGenerativeModel({ model: "gemini-2.0-flash" });
         
         const result = await model.generateContent([
             { text: "OCR Kanji: list 6 most likely characters, no spaces, no explanation." },
@@ -46,7 +45,7 @@ app.post("/api/ocr", async (req, res) => {
         const text = result.response.text().trim();
         const chars = text.split("").slice(0, 6);
 
-        // Khớp dữ liệu từ điển offline ngay tại server
+        // Khớp dữ liệu từ điển offline
         const candidates = chars.map(char => {
             const found = kanjiDict.find(item => item.kanji === char);
             return found || { kanji: char, hanviet: "MỚI", mean: "Dữ liệu AI" };
@@ -60,4 +59,4 @@ app.post("/api/ocr", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`Server LIVE tại cổng ${PORT} với Gemini 2.5 Flash`));
+app.listen(PORT, () => console.log(`Server LIVE tại cổng ${PORT} với Gemini Flash`));
