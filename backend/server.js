@@ -14,7 +14,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // --- 1. ROUTE ĐĂNG NHẬP (SỬA ĐỂ KHỚP VỚI FRONTEND) ---
 // Dùng /api/login để phân biệt với các route khác
-app.post("/api/login", (req, res) => {
+app.post("/login", (req, res) => {
     const { email, password } = req.body;
     if (email && password) {
         res.json({ 
