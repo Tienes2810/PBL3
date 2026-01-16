@@ -2,11 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import KanjiCanvas from '../components/KanjiCanvas';
 
-// --- SỬA LỖI QUAN TRỌNG TẠI ĐÂY ---
-// 1. Bỏ import kanjiData cũ
-// import { getKanjiList } from '../utils/kanjiData'; 
-
-// 2. Import trực tiếp file JSON từ điển thật
+// Import trực tiếp file JSON từ điển (chứa dữ liệu phân tích, bộ thủ...)
 import dictionaryData from '../utils/kanji-dictionary.json'; 
 
 const HomePage = () => {
@@ -17,17 +13,18 @@ const HomePage = () => {
   const [selectedKanji, setSelectedKanji] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   
-  // 3. Khởi tạo từ điển bằng dữ liệu từ file JSON
+  // Khởi tạo từ điển từ file JSON import bên trên
   const [dictionary] = useState(dictionaryData);
 
+  // Kiểm tra đăng nhập
   const session = JSON.parse(localStorage.getItem('session'));
   useEffect(() => {
     if (!session) navigate('/auth');
   }, [session, navigate]);
 
-  // (Phần useEffect tải getKanjiList cũ đã bị xóa vì không cần thiết nữa)
-
+  // --- HÀM GỌI API GOOGLE (Chuẩn hóa dữ liệu) ---
   const recognizeKanji = async (trace, width, height) => {
+    // Chuyển đổi format: [[x,y],...] -> [[x...], [y...], []]
     const formattedInk = trace.map(stroke => {
         const x = [];
         const y = [];
@@ -43,7 +40,7 @@ const HomePage = () => {
         requests: [{
             writing_guide: { writing_area_width: width, writing_area_height: height },
             ink: formattedInk,
-            language: "zh" 
+            language: "zh" // Dùng tiếng Trung để chặn Hiragana và nhận diện hình dáng tốt hơn
         }]
     };
 
@@ -55,6 +52,7 @@ const HomePage = () => {
         });
 
         const data = await response.json();
+        // Cấu trúc trả về thành công của Google
         if (data[0] === "SUCCESS" && data[1]?.[0]?.[1]) {
             return data[1][0][1];
         }
@@ -65,45 +63,55 @@ const HomePage = () => {
     }
   };
 
+  // --- HÀM XỬ LÝ KHI VẼ XONG ---
   const handleIdentify = async () => {
     if (!canvasRef.current || !canvasRef.current.getTrace) return;
     
     const trace = canvasRef.current.getTrace();
+    // Lấy kích thước chuẩn từ Canvas (đã fix lỗi Retina)
     const dimensions = canvasRef.current.getDimensions ? canvasRef.current.getDimensions() : { width: 500, height: 500 };
 
     if (!trace || trace.length === 0) return;
 
     setIsAnalyzing(true);
 
+    // Gọi API
     const results = await recognizeKanji(trace, dimensions.width, dimensions.height);
     
     if (results && results.length > 0) {
+        // 1. Lọc chỉ lấy ký tự đơn (Bỏ từ ghép)
         const singleChars = results.filter(str => str.length === 1);
+
+        // 2. Chỉ giữ lại Kanji (Bỏ số, dấu câu, Hiragana, Katakana...)
         const kanjiRegex = /^[\u4E00-\u9FAF]+$/;
         const cleanResults = singleChars.filter(char => kanjiRegex.test(char));
 
-        // Sắp xếp: Ưu tiên chữ có trong từ điển JSON lên đầu
+        // 3. Sắp xếp: Ưu tiên chữ có trong từ điển JSON của mình lên đầu
         cleanResults.sort((a, b) => {
-            // Lưu ý: Cần đảm bảo file JSON của bạn có trường "kanji"
             const aExists = dictionary.some(d => d.kanji === a);
             const bExists = dictionary.some(d => d.kanji === b);
             return bExists - aExists; 
         });
 
+        // Fallback: Nếu lọc xong mà rỗng (vẽ bậy) thì lấy kết quả gốc để không bị trắng trơn
         const finalResults = cleanResults.length > 0 ? cleanResults : singleChars.slice(0, 5);
 
+        // Map kết quả với dữ liệu từ điển
         const mappedCandidates = finalResults.slice(0, 6).map(char => {
-            // Tra cứu trong file JSON
             const found = dictionary.find(item => item.kanji === char);
             
-            // Nếu tìm thấy trong JSON thì lấy dữ liệu, không thì để trống
+            // Nếu tìm thấy trong JSON, lấy đầy đủ thông tin (radical, strokes...)
+            // Nếu không, tạo object mặc định
             return found || { 
                 kanji: char, 
                 hanviet: "---", 
                 mean: "Chưa có trong dữ liệu",
                 onyomi: "---",
                 kunyomi: "---",
-                detail: "Chưa có dữ liệu phân tích."
+                radical: "---",
+                strokes: null,
+                formation: "---",
+                detail: "Chưa có dữ liệu phân tích cho chữ này."
             };
         });
 
@@ -117,6 +125,8 @@ const HomePage = () => {
 
   return (
     <div className="flex h-screen bg-[#Fdfdfd] font-sans text-slate-900 overflow-hidden">
+      
+      {/* SIDEBAR (CỘT TRÁI) */}
       <aside className="w-64 bg-white border-r border-gray-100 p-6 flex flex-col shadow-sm z-10">
         <h2 className="text-3xl font-black italic mb-10 tracking-tighter">Dojo</h2>
         <nav className="flex-1 space-y-3 font-bold text-gray-400">
@@ -127,7 +137,10 @@ const HomePage = () => {
         <button onClick={() => { localStorage.removeItem('session'); navigate('/auth'); }} className="text-xs font-black text-gray-300 uppercase hover:text-red-500 pl-3 tracking-widest">LOGOUT</button>
       </aside>
 
+      {/* MAIN CONTENT (KHU VỰC CHÍNH) */}
       <main className="flex-1 p-6 grid grid-cols-12 gap-6 h-full overflow-y-auto">
+        
+        {/* CỘT GIỮA: VẼ KANJI */}
         <div className="col-span-7 bg-white rounded-[2rem] shadow-lg border border-gray-100 p-6 flex flex-col h-full max-h-[90vh]">
           <div className="flex justify-between items-center mb-4 px-2">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Khu vực vẽ</h3>
@@ -138,6 +151,7 @@ const HomePage = () => {
             <KanjiCanvas ref={canvasRef} onStrokeEnd={handleIdentify} />
           </div>
 
+          {/* THANH GỢI Ý KẾT QUẢ */}
           <div className="flex gap-3 justify-center mb-4 min-h-[64px] px-4 overflow-x-auto py-2">
             {candidates.length > 0 ? (
                 candidates.map((item, index) => (
@@ -145,7 +159,7 @@ const HomePage = () => {
                 ))
             ) : (
                 <div className="text-xs text-gray-400 font-bold flex items-center h-14">
-                    {isAnalyzing ? "Đang xử lý..." : "Hãy vẽ chữ vào khung bên trên"}
+                    {isAnalyzing ? "Đang phân tích..." : "Hãy vẽ chữ vào khung bên trên"}
                 </div>
             )}
           </div>
@@ -155,24 +169,86 @@ const HomePage = () => {
           </div>
         </div>
 
+        {/* CỘT PHẢI: CHI TIẾT KẾT QUẢ */}
         <div className="col-span-5 flex flex-col gap-6 h-full">
+            {/* THẺ TRÊN: THÔNG TIN CƠ BẢN */}
             <div className="bg-white rounded-[2rem] shadow-lg border border-gray-100 p-8 flex flex-col items-center relative overflow-hidden flex-1">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-yellow-50 rounded-bl-full -mr-10 -mt-10 z-0"></div>
+                
                 <div className="relative z-10 w-full flex flex-col items-center">
-                    <div className="w-28 h-28 bg-black text-white rounded-[1.5rem] flex items-center justify-center text-6xl font-serif font-medium mb-4 shadow-2xl">{selectedKanji?.kanji || "?"}</div>
-                    <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black bg-red-50 text-red-500 px-2 py-0.5 rounded uppercase">Hán Việt</span></div>
-                    <h3 className="text-3xl font-black mb-6 text-gray-800 text-center uppercase">{selectedKanji?.hanviet || "---"}</h3>
-                    <div className="w-full grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100"><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Âm Onyomi</p><p className="font-bold text-gray-700 text-sm">{selectedKanji?.onyomi || "---"}</p></div>
-                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100"><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Âm Kunyomi</p><p className="font-bold text-gray-700 text-sm">{selectedKanji?.kunyomi || "---"}</p></div>
+                    {/* Chữ Kanji lớn */}
+                    <div className="w-28 h-28 bg-black text-white rounded-[1.5rem] flex items-center justify-center text-6xl font-serif font-medium mb-4 shadow-2xl">
+                        {selectedKanji?.kanji || "?"}
                     </div>
+                    
+                    {/* Hán Việt */}
+                    <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[10px] font-black bg-red-50 text-red-500 px-2 py-0.5 rounded uppercase">Hán Việt</span>
+                    </div>
+                    <h3 className="text-3xl font-black mb-6 text-gray-800 text-center uppercase">
+                        {selectedKanji?.hanviet || "---"}
+                    </h3>
+
+                    {/* Âm On/Kun */}
+                    <div className="w-full grid grid-cols-2 gap-4 mb-6">
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Âm Onyomi</p>
+                            <p className="font-bold text-gray-700 text-sm">{selectedKanji?.onyomi || "---"}</p>
+                        </div>
+                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Âm Kunyomi</p>
+                            <p className="font-bold text-gray-700 text-sm">{selectedKanji?.kunyomi || "---"}</p>
+                        </div>
+                    </div>
+                    
                     <div className="w-full border-t border-gray-100 mb-6"></div>
-                    <div className="w-full text-center mb-6"><p className="text-gray-300 font-bold uppercase text-[10px] tracking-widest mb-2">Ý nghĩa</p><p className="text-lg font-bold text-gray-700 leading-snug">{selectedKanji?.mean || "Kết quả sẽ hiện ra ngay khi bạn vẽ."}</p></div>
+
+                    {/* Ý nghĩa */}
+                    <div className="w-full text-center mb-6">
+                        <p className="text-gray-300 font-bold uppercase text-[10px] tracking-widest mb-2">Ý nghĩa</p>
+                        <p className="text-lg font-bold text-gray-700 leading-snug">
+                            {selectedKanji?.mean || "Kết quả sẽ hiện ra ngay khi bạn vẽ."}
+                        </p>
+                    </div>
                 </div>
             </div>
-            <div className="bg-blue-50/50 rounded-[2rem] border border-blue-100 p-6">
-                <div className="flex items-center gap-2 mb-3"><span className="text-xl">💡</span><h4 className="font-bold text-blue-900 text-sm uppercase tracking-wide">Phân tích & Nguồn gốc</h4></div>
-                <p className="text-sm text-blue-800/80 font-medium leading-relaxed">{selectedKanji?.detail || "Thông tin nguồn gốc sẽ hiện tại đây."}</p>
+
+            {/* THẺ DƯỚI: PHÂN TÍCH CHUYÊN SÂU (ĐÃ CẬP NHẬT) */}
+            <div className="bg-blue-50/50 rounded-[2rem] border border-blue-100 p-6 flex flex-col gap-3">
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xl">💡</span>
+                    <h4 className="font-bold text-blue-900 text-sm uppercase tracking-wide">Phân tích chuyên sâu</h4>
+                </div>
+                
+                {/* Grid hiển thị Bộ thủ - Số nét - Cấu tạo */}
+                <div className="flex gap-4">
+                    <div className="bg-white px-3 py-2 rounded-lg border border-blue-100 shadow-sm">
+                        <span className="text-[10px] text-gray-400 font-black uppercase block">Bộ thủ</span>
+                        <span className="text-blue-700 font-bold text-sm">
+                            {selectedKanji?.radical || "---"}
+                        </span>
+                    </div>
+                    <div className="bg-white px-3 py-2 rounded-lg border border-blue-100 shadow-sm">
+                        <span className="text-[10px] text-gray-400 font-black uppercase block">Số nét</span>
+                        <span className="text-blue-700 font-bold text-sm">
+                            {selectedKanji?.strokes ? `${selectedKanji.strokes} nét` : "---"}
+                        </span>
+                    </div>
+                    <div className="bg-white px-3 py-2 rounded-lg border border-blue-100 shadow-sm flex-1">
+                        <span className="text-[10px] text-gray-400 font-black uppercase block">Cấu tạo</span>
+                        <span className="text-blue-700 font-bold text-sm">
+                            {selectedKanji?.formation || "---"}
+                        </span>
+                    </div>
+                </div>
+
+                {/* Câu chuyện ghi nhớ */}
+                <div className="mt-2">
+                    <p className="text-[10px] text-gray-400 font-black uppercase mb-1">Câu chuyện ghi nhớ</p>
+                    <p className="text-sm text-blue-800/90 font-medium leading-relaxed italic">
+                        "{selectedKanji?.detail || "Thông tin nguồn gốc sẽ hiện tại đây."}"
+                    </p>
+                </div>
             </div>
         </div>
       </main>

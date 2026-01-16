@@ -1,27 +1,47 @@
 [
   {
-    "kanji": "日",
-    "hanviet": "NHẬT",
-    "mean": "Mặt trời, ngày",
-    "onyomi": "ニチ (nichi), ジツ (jitsu)",
-    "kunyomi": "ひ (hi), か (ka)",
-    "detail": "Hình chữ nhật tượng trưng cho mặt trời, nét gạch ngang ở giữa là nhân."
+    "kanji": "木",
+    "hanviet": "MỘC",
+    "mean": "Cây cối",
+    "onyomi": "ボク (boku), モク (moku)",
+    "kunyomi": "き (ki)",
+    "radical": "木 (Mộc - Cây)",
+    "strokes": 4,
+    "formation": "Tượng hình",
+    "detail": "Vẽ lại hình dáng cái cây: Nét ngang là cành, nét sổ là thân, hai nét phẩy là rễ cây cắm sâu xuống đất."
   },
   {
-    "kanji": "月",
-    "hanviet": "NGUYỆT",
-    "mean": "Mặt trăng, tháng",
-    "onyomi": "ゲツ (getsu), ガツ (gatsu)",
-    "kunyomi": "つき (tsuki)",
-    "detail": "Hình mặt trăng lưỡi liềm với hai đám mây che."
+    "kanji": "休",
+    "hanviet": "HƯU",
+    "mean": "Nghỉ ngơi",
+    "onyomi": "キュウ (kyuu)",
+    "kunyomi": "やす (yasu)",
+    "radical": "人 (Nhân đứng - Người)",
+    "strokes": 6,
+    "formation": "Hội ý (Ghép ý nghĩa)",
+    "detail": "Gồm bộ Nhân (人 - người) đứng cạnh bộ Mộc (木 - cây). Ý nghĩa: Người nông dân làm việc mệt mỏi thì dựa vào gốc cây để nghỉ ngơi."
   },
   {
-    "kanji": "火",
-    "hanviet": "HỎA",
-    "mean": "Lửa",
-    "onyomi": "カ (ka)",
-    "kunyomi": "ひ (hi)",
-    "detail": "Hình ảnh ngọn lửa đang bùng cháy."
+    "kanji": "林",
+    "hanviet": "LÂM",
+    "mean": "Rừng thưa",
+    "onyomi": "リン (rin)",
+    "kunyomi": "はやし (hayashi)",
+    "radical": "木 (Mộc - Cây)",
+    "strokes": 8,
+    "formation": "Hội ý",
+    "detail": "Hai chữ Mộc (木) xếp cạnh nhau. Ý nghĩa: Nhiều cây tụ lại thì thành rừng."
+  },
+  {
+    "kanji": "森",
+    "hanviet": "SÂM",
+    "mean": "Rừng rậm",
+    "onyomi": "シン (shin)",
+    "kunyomi": "もり (mori)",
+    "radical": "木 (Mộc - Cây)",
+    "strokes": 12,
+    "formation": "Hội ý",
+    "detail": "Ba chữ Mộc (木) xếp chồng lên nhau. Ý nghĩa: Rất nhiều cây, cây cối rậm rạp hơn cả rừng (Lâm)."
   },
   {
     "kanji": "水",
@@ -29,414 +49,9 @@
     "mean": "Nước",
     "onyomi": "スイ (sui)",
     "kunyomi": "みず (mizu)",
-    "detail": "Dòng nước chảy ở giữa, bọt nước bắn hai bên."
-  },
-  {
-    "kanji": "木",
-    "hanviet": "MỘC",
-    "mean": "Cây cối",
-    "onyomi": "ボク (boku), モク (moku)",
-    "kunyomi": "き (ki)",
-    "detail": "Hình cái cây có tán lá và rễ."
-  },
-  {
-    "kanji": "金",
-    "hanviet": "KIM",
-    "mean": "Vàng, tiền, kim loại",
-    "onyomi": "キン (kin)",
-    "kunyomi": "かね (kane)",
-    "detail": "Mái nhà che chở cho kho báu (ngọc) chôn dưới đất."
-  },
-  {
-    "kanji": "土",
-    "hanviet": "THỔ",
-    "mean": "Đất",
-    "onyomi": "ド (do)",
-    "kunyomi": "つち (tsuchi)",
-    "detail": "Cây mọc lên từ mặt đất."
-  },
-  {
-    "kanji": "山",
-    "hanviet": "SƠN",
-    "mean": "Núi",
-    "onyomi": "サン (san)",
-    "kunyomi": "やま (yama)",
-    "detail": "Hình ba ngọn núi nhấp nhô."
-  },
-  {
-    "kanji": "川",
-    "hanviet": "XUYÊN",
-    "mean": "Sông",
-    "onyomi": "セン (sen)",
-    "kunyomi": "かわ (kawa)",
-    "detail": "Dòng sông đang chảy uốn lượn."
-  },
-  {
-    "kanji": "田",
-    "hanviet": "ĐIỀN",
-    "mean": "Ruộng lúa",
-    "onyomi": "デン (den)",
-    "kunyomi": "た (ta)",
-    "detail": "Hình thửa ruộng chia làm 4 ô."
-  },
-  {
-    "kanji": "人",
-    "hanviet": "NHÂN",
-    "mean": "Người",
-    "onyomi": "ジン (jin), ニン (nin)",
-    "kunyomi": "ひと (hito)",
-    "detail": "Hình dáng người đang bước đi."
-  },
-  {
-    "kanji": "入",
-    "hanviet": "NHẬP",
-    "mean": "Vào, bước vào",
-    "onyomi": "ニュウ (nyu)",
-    "kunyomi": "はい (hai), い (i)",
-    "detail": "Rễ cây cắm vào đất hoặc người bước qua cửa."
-  },
-  {
-    "kanji": "出",
-    "hanviet": "XUẤT",
-    "mean": "Ra, rời khỏi",
-    "onyomi": "シュツ (shutsu)",
-    "kunyomi": "で (de), だ (da)",
-    "detail": "Cây cỏ mọc chồi ra khỏi mặt đất."
-  },
-  {
-    "kanji": "白",
-    "hanviet": "BẠCH",
-    "mean": "Trắng",
-    "onyomi": "ハク (haku)",
-    "kunyomi": "しろ (shiro)",
-    "detail": "Ánh sáng trắng tỏa ra từ mặt trời."
-  },
-  {
-    "kanji": "一",
-    "hanviet": "NHẤT",
-    "mean": "Số 1",
-    "onyomi": "イチ (ichi)",
-    "kunyomi": "ひと (hito)",
-    "detail": "Một ngón tay hoặc một vạch."
-  },
-  {
-    "kanji": "二",
-    "hanviet": "NHỊ",
-    "mean": "Số 2",
-    "onyomi": "ニ (ni)",
-    "kunyomi": "ふた (futa)",
-    "detail": "Hai vạch ngang."
-  },
-  {
-    "kanji": "三",
-    "hanviet": "TAM",
-    "mean": "Số 3",
-    "onyomi": "サン (san)",
-    "kunyomi": "みっ (mit)",
-    "detail": "Ba vạch ngang."
-  },
-  {
-    "kanji": "四",
-    "hanviet": "TỨ",
-    "mean": "Số 4",
-    "onyomi": "シ (shi)",
-    "kunyomi": "よん (yon)",
-    "detail": "Bốn bức tường bao quanh."
-  },
-  {
-    "kanji": "五",
-    "hanviet": "NGŨ",
-    "mean": "Số 5",
-    "onyomi": "ゴ (go)",
-    "kunyomi": "いつ (itsu)",
-    "detail": "Hình dáng cuộn dây thừng bắt chéo (cổ)."
-  },
-  {
-    "kanji": "六",
-    "hanviet": "LỤC",
-    "mean": "Số 6",
-    "onyomi": "ロク (roku)",
-    "kunyomi": "むっ (mut)",
-    "detail": "Nhà có 4 bức tường và mái."
-  },
-  {
-    "kanji": "七",
-    "hanviet": "THẤT",
-    "mean": "Số 7",
-    "onyomi": "シチ (shichi)",
-    "kunyomi": "なな (nana)",
-    "detail": "Vết cắt ngang."
-  },
-  {
-    "kanji": "八",
-    "hanviet": "BÁT",
-    "mean": "Số 8",
-    "onyomi": "ハチ (hachi)",
-    "kunyomi": "やっ (yat)",
-    "detail": "Hai nét tách ra hai bên."
-  },
-  {
-    "kanji": "九",
-    "hanviet": "CỬU",
-    "mean": "Số 9",
-    "onyomi": "キュウ (kyu)",
-    "kunyomi": "ここの (kokono)",
-    "detail": "Cánh tay cong lại."
-  },
-  {
-    "kanji": "十",
-    "hanviet": "THẬP",
-    "mean": "Số 10",
-    "onyomi": "ジュウ (ju)",
-    "kunyomi": "とお (too)",
-    "detail": "Hai nét giao nhau, tập hợp tất cả."
-  },
-  {
-    "kanji": "百",
-    "hanviet": "BÁCH",
-    "mean": "Trăm",
-    "onyomi": "ヒャク (hyaku)",
-    "kunyomi": "もも (momo)",
-    "detail": "Một (nhất) trăm (bạch)."
-  },
-  {
-    "kanji": "千",
-    "hanviet": "THIÊN",
-    "mean": "Nghìn",
-    "onyomi": "セン (sen)",
-    "kunyomi": "ち (chi)",
-    "detail": "Người (nhân) bước đi ngàn dặm."
-  },
-  {
-    "kanji": "万",
-    "hanviet": "VẠN",
-    "mean": "Mười nghìn",
-    "onyomi": "マン (man), バン (ban)",
-    "kunyomi": "---",
-    "detail": "Con bọ cạp vạn tuế."
-  },
-  {
-    "kanji": "円",
-    "hanviet": "VIÊN",
-    "mean": "Tròn, Yên Nhật",
-    "onyomi": "エン (en)",
-    "kunyomi": "まる (maru)",
-    "detail": "Vòng tròn khép kín."
-  },
-  {
-    "kanji": "大",
-    "hanviet": "ĐẠI",
-    "mean": "To lớn",
-    "onyomi": "ダイ (dai)",
-    "kunyomi": "おお (oo)",
-    "detail": "Người dang rộng tay chân."
-  },
-  {
-    "kanji": "小",
-    "hanviet": "TIỂU",
-    "mean": "Nhỏ bé",
-    "onyomi": "ショウ (shou)",
-    "kunyomi": "ちい (chii)",
-    "detail": "Hạt bụi bị tách nhỏ."
-  },
-  {
-    "kanji": "上",
-    "hanviet": "THƯỢNG",
-    "mean": "Trên, lên",
-    "onyomi": "ジョウ (jou)",
-    "kunyomi": "うえ (ue), あ (a)",
-    "detail": "Chỉ tay lên trên mặt đất."
-  },
-  {
-    "kanji": "下",
-    "hanviet": "HẠ",
-    "mean": "Dưới, xuống",
-    "onyomi": "カ (ka), ゲ (ge)",
-    "kunyomi": "した (shita), さ (sa)",
-    "detail": "Chỉ tay xuống dưới mặt đất."
-  },
-  {
-    "kanji": "中",
-    "hanviet": "TRUNG",
-    "mean": "Ở giữa, bên trong",
-    "onyomi": "チュウ (chu)",
-    "kunyomi": "なか (naka)",
-    "detail": "Mũi tên xuyên qua tấm bia ở giữa."
-  },
-  {
-    "kanji": "左",
-    "hanviet": "TẢ",
-    "mean": "Trái",
-    "onyomi": "サ (sa)",
-    "kunyomi": "ひだり (hidari)",
-    "detail": "Tay trái cầm thước kẻ."
-  },
-  {
-    "kanji": "右",
-    "hanviet": "HỮU",
-    "mean": "Phải",
-    "onyomi": "ウ (u), ユウ (yu)",
-    "kunyomi": "みぎ (migi)",
-    "detail": "Tay phải đưa lên miệng ăn."
-  },
-  {
-    "kanji": "年",
-    "hanviet": "NIÊN",
-    "mean": "Năm",
-    "onyomi": "ネン (nen)",
-    "kunyomi": "とし (toshi)",
-    "detail": "Người vác lúa về nhà sau một năm vụ mùa."
-  },
-  {
-    "kanji": "子",
-    "hanviet": "TỬ",
-    "mean": "Trẻ con",
-    "onyomi": "シ (shi), ス (su)",
-    "kunyomi": "こ (ko)",
-    "detail": "Hình đứa trẻ đang dang tay đòi bế."
-  },
-  {
-    "kanji": "女",
-    "hanviet": "NỮ",
-    "mean": "Phụ nữ",
-    "onyomi": "ジョ (jo)",
-    "kunyomi": "おんな (onna)",
-    "detail": "Dáng người phụ nữ đang ngồi."
-  },
-  {
-    "kanji": "男",
-    "hanviet": "NAM",
-    "mean": "Đàn ông",
-    "onyomi": "ダン (dan), ナン (nan)",
-    "kunyomi": "おとこ (otoko)",
-    "detail": "Người dùng sức lực (lực) làm việc ngoài ruộng (điền)."
-  },
-  {
-    "kanji": "目",
-    "hanviet": "MỤC",
-    "mean": "Mắt",
-    "onyomi": "モク (moku)",
-    "kunyomi": "め (me)",
-    "detail": "Hình con mắt dựng đứng."
-  },
-  {
-    "kanji": "口",
-    "hanviet": "KHẨU",
-    "mean": "Miệng",
-    "onyomi": "コウ (kou)",
-    "kunyomi": "くち (kuchi)",
-    "detail": "Hình cái miệng mở rộng."
-  },
-  {
-    "kanji": "耳",
-    "hanviet": "NHĨ",
-    "mean": "Tai",
-    "onyomi": "ジ (ji)",
-    "kunyomi": "みみ (mimi)",
-    "detail": "Hình vành tai."
-  },
-  {
-    "kanji": "手",
-    "hanviet": "THỦ",
-    "mean": "Tay",
-    "onyomi": "シュ (shu)",
-    "kunyomi": "て (te)",
-    "detail": "Hình bàn tay năm ngón xòe ra."
-  },
-  {
-    "kanji": "足",
-    "hanviet": "TÚC",
-    "mean": "Chân",
-    "onyomi": "ソク (soku)",
-    "kunyomi": "あし (ashi)",
-    "detail": "Cái miệng ở trên đôi chân."
-  },
-  {
-    "kanji": "力",
-    "hanviet": "LỰC",
-    "mean": "Sức lực",
-    "onyomi": "リョク (ryoku)",
-    "kunyomi": "ちから (chikara)",
-    "detail": "Hình cánh tay đang gồng lên."
-  },
-  {
-    "kanji": "父",
-    "hanviet": "PHỤ",
-    "mean": "Cha (Bố)",
-    "onyomi": "フ (fu)",
-    "kunyomi": "ちち (chichi)",
-    "detail": "Người cha cầm gậy dạy bảo con."
-  },
-  {
-    "kanji": "母",
-    "hanviet": "MẪU",
-    "mean": "Mẹ",
-    "onyomi": "ボ (bo)",
-    "kunyomi": "はは (haha)",
-    "detail": "Người mẹ (nữ) có hai bầu sữa."
-  },
-  {
-    "kanji": "先",
-    "hanviet": "TIÊN",
-    "mean": "Trước",
-    "onyomi": "セン (sen)",
-    "kunyomi": "さき (saki)",
-    "detail": "Người đi trước."
-  },
-  {
-    "kanji": "生",
-    "hanviet": "SINH",
-    "mean": "Sinh ra, sống",
-    "onyomi": "セイ (sei)",
-    "kunyomi": "う (u), い (i)",
-    "detail": "Cây nảy mầm từ mặt đất."
-  },
-  {
-    "kanji": "学",
-    "hanviet": "HỌC",
-    "mean": "Học tập",
-    "onyomi": "ガク (gaku)",
-    "kunyomi": "まな (mana)",
-    "detail": "Đứa trẻ (tử) đang học dưới mái nhà."
-  },
-  {
-    "kanji": "校",
-    "hanviet": "HIỆU",
-    "mean": "Trường học",
-    "onyomi": "コウ (kou)",
-    "kunyomi": "---",
-    "detail": "Nơi giao lưu (giao) bên cạnh cây cối (mộc)."
-  },
-  {
-    "kanji": "友",
-    "hanviet": "HỮU",
-    "mean": "Bạn bè",
-    "onyomi": "ユウ (yu)",
-    "kunyomi": "とも (tomo)",
-    "detail": "Hai bàn tay bắt lấy nhau."
-  },
-  {
-    "kanji": "本",
-    "hanviet": "BẢN",
-    "mean": "Sách, gốc rễ",
-    "onyomi": "ホン (hon)",
-    "kunyomi": "もと (moto)",
-    "detail": "Gạch một nét ở gốc cây (mộc) để chỉ gốc rễ."
-  },
-  {
-    "kanji": "毎",
-    "hanviet": "MỖI",
-    "mean": "Mỗi",
-    "onyomi": "マイ (mai)",
-    "kunyomi": "---",
-    "detail": "Người mẹ (mẫu) đội nón làm việc mỗi ngày."
-  },
-  {
-    "kanji": "何",
-    "hanviet": "HÀ",
-    "mean": "Cái gì",
-    "onyomi": "カ (ka)",
-    "kunyomi": "なに (nani), なん (nan)",
-    "detail": "Người (nhân) đang mang vác cái gì đó (khả)."
+    "radical": "水 (Thủy - Nước)",
+    "strokes": 4,
+    "formation": "Tượng hình",
+    "detail": "Vẽ lại hình ảnh dòng nước đang chảy ở giữa (nét móc), và những giọt nước bắn tung tóe sang hai bên."
   }
 ]
