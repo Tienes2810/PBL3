@@ -1,10 +1,8 @@
-// backend/server.js
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const { GoogleGenAI } = require("@google/genai"); 
 const supabase = require("./supabaseClient"); 
-const kanjiDict = require("./kanji-dictionary.json");
+// ĐÃ XÓA: const kanjiDict = require("./kanji-dictionary.json"); -> Không cần nữa vì Frontend tự tra cứu rồi
 
 dotenv.config();
 const app = express();
@@ -17,13 +15,9 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
     console.log("\n========================================");
     console.log(`🚀 BACKEND ĐANG CHẠY TẠI CỔNG: ${PORT}`);
-    console.log(`🤖 AI GEMINI (2.5 Flash):      SẴN SÀNG`);
     console.log(`🗄️  DATABASE SUPABASE:          ĐÃ KẾT NỐI`);
     console.log("========================================\n");
 });
-
-// Khởi tạo AI
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // --- 1. ĐĂNG KÝ (Ghi vào Supabase) ---
 app.post("/api/register", async (req, res) => {
@@ -81,34 +75,7 @@ app.post("/api/login", async (req, res) => {
     }
 });
 
-// --- 3. OCR KANJI (Giữ nguyên) ---
-app.post("/api/ocr", async (req, res) => {
-    try {
-        const { image } = req.body;
-        console.log(`[AI OCR] Nhận được yêu cầu phân tích ảnh...`);
-        
-        if (!image) return res.status(400).json({ error: "Không có ảnh" });
-        const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
-
-        const model = ai.generativeAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-        const result = await model.generateContent([
-            { text: "OCR Kanji: list 6 most likely characters, no spaces, no explanation." },
-            { inlineData: { data: base64Data, mimeType: "image/png" } },
-        ]);
-
-        const text = result.response.text().trim();
-        const chars = text.split("").slice(0, 6);
-        
-        // Khớp từ điển
-        const candidates = chars.map(char => {
-            const found = kanjiDict.find(item => item.kanji === char);
-            return found || { kanji: char, hanviet: "MỚI", mean: "Dữ liệu AI" };
-        });
-
-        console.log(`✅ [AI SUCCESS] Kết quả: ${chars.join(", ")}`);
-        res.json({ candidates });
-    } catch (error) {
-        console.error(`❌ [AI ERROR] ${error.message}`);
-        res.status(500).json({ error: `Lỗi AI: ${error.message}` });
-    }
+// --- 3. API DỰ PHÒNG (Để không bị lỗi 404 nếu lỡ Frontend gọi nhầm) ---
+app.post("/api/ocr", (req, res) => {
+    res.json({ message: "Backend không còn xử lý OCR nữa. Frontend tự xử lý Offline rồi!" });
 });
