@@ -17,43 +17,30 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      // 1. GỌI API ĐĂNG NHẬP THẬT
+      // Gọi API đăng nhập thật
       const response = await fetch('https://pbl3-sofd.onrender.com/api/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Backend của bạn cần 'username' hoặc 'email' tùy quy định
-        // Ở đây mình gửi cả username (nhập từ input)
-        body: JSON.stringify({ 
-            username: username, 
-            password: password 
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // 2. NẾU THÀNH CÔNG: DỮ LIỆU TỪ SERVER SẼ CHỨA THÔNG TIN ĐÃ SỬA (Tên mới, Avatar mới...)
-        // Backend thường trả về dạng: { message: "...", user: { ... } }
-        // Hoặc trả về token. Ở đây giả sử data.user hoặc data.session chứa thông tin user.
+        // Lấy thông tin user từ response của server
+        // (Server trả về gì thì dùng cái đó, chứa info mới nhất)
+        const userFromDB = data.user || data.session || data;
+
+        // Lưu vào LocalStorage để reload không mất
+        localStorage.setItem('session', JSON.stringify(userFromDB));
         
-        // Kiểm tra cấu trúc trả về của API bạn (bạn có thể console.log(data) để xem)
-        // Giả sử API trả về object user nằm trong data.user hoặc chính là data
-        const userData = data.user || data.session || data; 
+        // Cập nhật Context để toàn bộ App biết đã login
+        setUser(userFromDB);
 
-        // Đảm bảo có trường language (nếu backend chưa có thì mặc định 'vi')
-        const finalUser = { ...userData, language: userData.language || 'vi' };
-
-        // 3. LƯU VÀO CONTEXT & LOCALSTORAGE
-        localStorage.setItem('session', JSON.stringify(finalUser));
-        setUser(finalUser);
-
-        alert(`Đăng nhập thành công! Chào mừng ${finalUser.fullName || finalUser.username}.`);
+        // Chuyển hướng vào trang chủ
         navigate('/home'); 
       } else {
-        // Xử lý lỗi từ backend (sai pass, không tìm thấy user...)
-        setError(data.message || "Tên đăng nhập hoặc mật khẩu không đúng.");
+        setError(data.message || "Sai tên đăng nhập hoặc mật khẩu");
       }
     } catch (err) {
       console.error(err);
@@ -84,7 +71,6 @@ const LoginPage = () => {
           <h2 className="text-3xl font-black text-gray-800 mb-2 text-center uppercase">Chào mừng trở lại!</h2>
           <p className="text-gray-500 text-center mb-8 font-medium">Vui lòng đăng nhập để đồng bộ dữ liệu.</p>
 
-          {/* Hiển thị lỗi nếu có */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 text-sm font-bold rounded-lg text-center animate-pulse">
                 ⚠️ {error}

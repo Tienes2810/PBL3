@@ -4,7 +4,8 @@ import { useAppContext } from '../context/AppContext';
 
 const Profile = () => {
   const navigate = useNavigate();
-  const { user, updateUserInfo } = useAppContext();
+  // Lấy thêm hàm setUser để xóa data khi đăng xuất
+  const { user, updateUserInfo, setUser } = useAppContext();
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -24,7 +25,7 @@ const Profile = () => {
   useEffect(() => {
     if (user) {
       setFormData({
-        // Thử lấy cả name hoặc fullName hoặc username
+        // Ưu tiên các trường dữ liệu từ server
         fullName: user.name || user.fullName || user.username || 'Sensei', 
         email: user.email || 'Chưa cập nhật',
         bio: user.bio || '',
@@ -41,11 +42,9 @@ const Profile = () => {
     setIsLoading(true);
 
     try {
-      // 1. LẤY TOKEN TỪ SESSION (Quan trọng để Server cho phép sửa)
+      // Lấy Token từ localStorage để xác thực với Server
       const session = JSON.parse(localStorage.getItem('session'));
       const token = session?.access_token || session?.token; 
-
-      console.log("Đang gửi dữ liệu lên Server:", formData);
 
       const response = await fetch('https://pbl3-sofd.onrender.com/api/update-profile', {
         method: 'POST',
@@ -56,8 +55,7 @@ const Profile = () => {
         },
         body: JSON.stringify({
           email: formData.email,
-          // Gửi cả 2 trường để chắc chắn Server nhận được 1 trong 2
-          name: formData.fullName,      
+          name: formData.fullName, // Gửi cả name và fullName để chắc chắn
           fullName: formData.fullName,
           bio: formData.bio,
           avatar: formData.avatar,
@@ -66,11 +64,9 @@ const Profile = () => {
       });
 
       const data = await response.json();
-      console.log("Server phản hồi:", data);
 
       if (response.ok) {
-        // Cập nhật Context ngay lập tức
-        // Lưu ý: Cập nhật cả trường 'name' và 'fullName' vào local để đồng bộ
+        // Cập nhật Context ngay lập tức để giao diện đổi luôn
         updateUserInfo({ ...formData, name: formData.fullName });
         
         setIsSaved(true);
@@ -88,9 +84,14 @@ const Profile = () => {
 
   const handleLogout = () => {
     if(window.confirm("Bạn chắc chắn muốn đăng xuất?")) {
+        // 1. Xóa session lưu trong máy
         localStorage.removeItem('session');
+        
+        // 2. Xóa user trong Context (Giao diện tự về trạng thái chưa login)
+        setUser(null);
+        
+        // 3. Chuyển hướng về trang login (Không reload trang để tránh 404)
         navigate('/auth');
-        window.location.reload();
     }
   }
 
