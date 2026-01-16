@@ -104,10 +104,10 @@ const HomePage = () => {
   return (
     <div className="flex h-screen bg-[#Fdfdfd] font-sans text-slate-900 overflow-hidden">
       
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-white border-r border-gray-100 p-6 flex flex-col shadow-sm z-10">
-        <h2 className="text-3xl font-black italic mb-10 tracking-tighter">Dojo</h2>
-        <nav className="flex-1 space-y-3 font-bold text-gray-400">
+      {/* SIDEBAR - Giữ nguyên nhưng padding gọn hơn */}
+      <aside className="w-64 bg-white border-r border-gray-100 p-5 flex flex-col shadow-sm z-10 flex-shrink-0">
+        <h2 className="text-3xl font-black italic mb-8 tracking-tighter">Dojo</h2>
+        <nav className="flex-1 space-y-2 font-bold text-gray-400">
           <div className="text-black bg-gray-100 p-3 rounded-xl cursor-pointer flex items-center gap-3"><span>✍️</span> Tra cứu viết tay</div>
           <div className="hover:text-black p-3 hover:bg-gray-50 rounded-xl transition-all cursor-pointer flex items-center gap-3"><span>🤖</span> AI Chatbot</div>
           <div className="hover:text-black p-3 hover:bg-gray-50 rounded-xl transition-all cursor-pointer flex items-center gap-3"><span>📖</span> Từ điển</div>
@@ -115,85 +115,126 @@ const HomePage = () => {
         <button onClick={() => { localStorage.removeItem('session'); navigate('/auth'); }} className="text-xs font-black text-gray-300 uppercase hover:text-red-500 pl-3 tracking-widest">LOGOUT</button>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 p-6 grid grid-cols-12 gap-6 h-full overflow-y-auto">
+      {/* MAIN CONTENT - CHIA 2 CỘT CHÍNH (KHÔNG SCROLL) */}
+      <main className="flex-1 p-4 grid grid-cols-12 gap-4 h-full max-h-screen overflow-hidden">
         
-        {/* CỘT TRÁI: KHU VỰC VẼ */}
-        <div className="col-span-7 bg-white rounded-[2rem] shadow-lg border border-gray-100 p-6 flex flex-col h-full max-h-[90vh]">
-          <div className="flex justify-between items-center mb-4 px-2">
+        {/* === CỘT TRÁI: KHU VỰC VẼ (Tối ưu chiều cao) === */}
+        <div className="col-span-7 bg-white rounded-[1.5rem] shadow-lg border border-gray-100 p-5 flex flex-col h-full overflow-hidden">
+          
+          {/* Header nhỏ gọn: Tiêu đề + Undo */}
+          <div className="flex justify-between items-center mb-2 flex-shrink-0">
             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Khu vực vẽ</h3>
-            <button onClick={() => { if(canvasRef.current.undo) canvasRef.current.undo(); }} className="text-xs font-bold text-blue-500 hover:text-blue-700 bg-blue-50 px-3 py-1 rounded-lg transition-colors">Hoàn tác ↩</button>
+            <button 
+                onClick={() => { if(canvasRef.current.undo) canvasRef.current.undo(); }} 
+                className="text-xs font-bold text-gray-500 hover:text-black bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1"
+            >
+                <span>↩</span> Hoàn tác
+            </button>
           </div>
           
-          {/* --- CẬP NHẬT: KHUNG VẼ HÌNH VUÔNG CHUẨN --- */}
-          {/* w-full: Chiếm hết chiều rộng cho phép */}
-          {/* max-w-[480px]: Không to quá mức cần thiết */}
-          {/* aspect-square: Ép hình vuông (Ô mễ chuẩn) */}
-          {/* mx-auto: Căn giữa (Để khoảng trắng 2 bên cân đối, đẹp mắt) */}
-          <div className="w-full max-w-[480px] aspect-square mx-auto bg-[#fffcf5] rounded-[4px] border-4 border-red-900/10 shadow-inner overflow-hidden mb-6 relative cursor-crosshair">
-            <KanjiCanvas ref={canvasRef} onStrokeEnd={handleIdentify} />
+          {/* CONTAINER VẼ: Flex-1 để chiếm hết khoảng trống, min-h-0 để cho phép co nhỏ */}
+          <div className="flex-1 min-h-0 w-full flex items-center justify-center py-2 relative">
+             {/* ASPECT-SQUARE + MAX-H-FULL: Đây là bí thuật! 
+                 Nó ép hình vuông nhưng không bao giờ cao quá cha của nó. */}
+             <div className="aspect-square h-full max-h-full bg-[#fffcf5] rounded-[4px] border-4 border-red-900/10 shadow-inner overflow-hidden relative cursor-crosshair">
+                <KanjiCanvas ref={canvasRef} onStrokeEnd={handleIdentify} />
+             </div>
           </div>
 
-          {/* DANH SÁCH GỢI Ý */}
-          <div className="flex gap-3 justify-center mb-4 min-h-[64px] px-4 overflow-x-auto py-2">
-            {candidates.length > 0 ? (
-                candidates.map((item, index) => (
-                <button 
-                    key={index} 
-                    onClick={() => setSelectedKanji(item)}
-                    style={{ fontFamily: "'Yuji Syuku', serif" }} 
-                    className={`flex-shrink-0 w-14 h-14 rounded-xl text-3xl transition-all border-2 flex items-center justify-center pb-1 ${selectedKanji?.kanji === item.kanji ? 'bg-black text-white border-black scale-110 shadow-lg' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-300'}`}
-                >
-                    {item.kanji}
-                </button>
-                ))
-            ) : (
-                <div className="text-xs text-gray-400 font-bold flex items-center h-14">
-                    {isAnalyzing ? "Đang phân tích..." : "Hãy vẽ chữ vào ô vuông bên trên"}
-                </div>
-            )}
-          </div>
-
-          <div className="flex justify-center">
-            <button onClick={() => { canvasRef.current.clear(); setCandidates([]); setSelectedKanji(null); }} className="w-full py-4 bg-gray-100 text-gray-500 rounded-xl font-black uppercase text-xs tracking-widest hover:bg-gray-200 hover:text-gray-800 transition-all active:scale-[0.98]">XÓA BẢNG VẼ</button>
+          {/* Footer: Gợi ý + Nút Xóa */}
+          <div className="flex-shrink-0 mt-2 flex flex-col gap-2">
+            {/* Thanh gợi ý */}
+            <div className="flex gap-2 justify-center h-12 overflow-x-auto">
+                {candidates.length > 0 ? (
+                    candidates.map((item, index) => (
+                    <button 
+                        key={index} 
+                        onClick={() => setSelectedKanji(item)}
+                        style={{ fontFamily: "'Yuji Syuku', serif" }} 
+                        className={`flex-shrink-0 w-12 h-12 rounded-lg text-2xl transition-all border-2 flex items-center justify-center pb-1 ${selectedKanji?.kanji === item.kanji ? 'bg-black text-white border-black scale-105 shadow-md' : 'bg-white text-gray-600 border-gray-100 hover:border-gray-300'}`}
+                    >
+                        {item.kanji}
+                    </button>
+                    ))
+                ) : (
+                    <div className="text-[10px] text-gray-300 font-bold flex items-center justify-center border-2 border-dashed border-gray-100 rounded-lg w-full">
+                        {isAnalyzing ? "Đang phân tích..." : "Kết quả sẽ hiện tại đây"}
+                    </div>
+                )}
+            </div>
+            
+            {/* Nút Xóa */}
+            <button 
+                onClick={() => { canvasRef.current.clear(); setCandidates([]); setSelectedKanji(null); }} 
+                className="w-full py-3 bg-gray-50 text-gray-400 rounded-xl font-black uppercase text-[10px] tracking-widest hover:bg-red-50 hover:text-red-500 transition-all"
+            >
+                XÓA BẢNG VẼ
+            </button>
           </div>
         </div>
 
-        {/* CỘT PHẢI: KẾT QUẢ & ĐIỀU HƯỚNG */}
-        <div className="col-span-5 flex flex-col gap-6 h-full">
-            <div className="bg-white rounded-[2rem] shadow-lg border border-gray-100 p-8 flex flex-col items-center relative overflow-hidden flex-1">
-                <div className="absolute top-0 right-0 w-40 h-40 bg-yellow-50 rounded-bl-full -mr-10 -mt-10 z-0"></div>
-                <div className="relative z-10 w-full flex flex-col items-center">
+        {/* === CỘT PHẢI: KẾT QUẢ (Tự co giãn) === */}
+        <div className="col-span-5 flex flex-col gap-4 h-full overflow-hidden">
+            
+            {/* Card Thông tin (Flex-1 để chiếm phần lớn) */}
+            <div className="bg-white rounded-[1.5rem] shadow-lg border border-gray-100 p-6 flex flex-col items-center relative overflow-hidden flex-1 min-h-0">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-bl-full -mr-8 -mt-8 z-0"></div>
+                
+                <div className="relative z-10 w-full flex flex-col items-center h-full justify-center">
+                    {/* Chữ Hán */}
                     <div 
-                        className="w-28 h-28 bg-black text-white rounded-[1.5rem] flex items-center justify-center text-7xl mb-4 shadow-2xl pb-2"
+                        className="w-24 h-24 bg-black text-white rounded-[1.2rem] flex items-center justify-center text-6xl mb-3 shadow-xl pb-2 flex-shrink-0"
                         style={{ fontFamily: "'Yuji Syuku', serif" }}
                     >
                         {selectedKanji?.kanji || "?"}
                     </div>
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-black bg-red-50 text-red-500 px-2 py-0.5 rounded uppercase">Hán Việt</span>
-                    </div>
-                    <h3 className="text-3xl font-black mb-6 text-gray-800 text-center uppercase">
+                    
+                    <span className="text-[9px] font-black bg-red-50 text-red-500 px-2 py-0.5 rounded uppercase mb-1">Hán Việt</span>
+                    
+                    <h3 className="text-2xl font-black mb-4 text-gray-800 text-center uppercase truncate w-full">
                         {selectedKanji?.hanviet || "---"}
                     </h3>
-                    <div className="w-full grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100"><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Âm Onyomi</p><p className="font-bold text-gray-700 text-sm">{selectedKanji?.onyomi || "---"}</p></div>
-                        <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100"><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Âm Kunyomi</p><p className="font-bold text-gray-700 text-sm">{selectedKanji?.kunyomi || "---"}</p></div>
+
+                    {/* On/Kun Grid */}
+                    <div className="w-full grid grid-cols-2 gap-3 mb-4">
+                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Onyomi</p>
+                            <p className="font-bold text-gray-700 text-xs truncate">{selectedKanji?.onyomi || "-"}</p>
+                        </div>
+                        <div className="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Kunyomi</p>
+                            <p className="font-bold text-gray-700 text-xs truncate">{selectedKanji?.kunyomi || "-"}</p>
+                        </div>
                     </div>
-                    <div className="w-full border-t border-gray-100 mb-6"></div>
-                    <div className="w-full text-center mb-6"><p className="text-gray-300 font-bold uppercase text-[10px] tracking-widest mb-2">Ý nghĩa</p><p className="text-lg font-bold text-gray-700 leading-snug">{selectedKanji?.mean || "Kết quả sẽ hiện ra ngay khi bạn vẽ."}</p></div>
+                    
+                    {/* Nghĩa */}
+                    <div className="w-full text-center border-t border-gray-100 pt-4 flex-1 flex flex-col justify-center">
+                        <p className="text-gray-300 font-bold uppercase text-[9px] tracking-widest mb-1">Ý nghĩa</p>
+                        <p className="text-base font-bold text-gray-700 leading-snug line-clamp-3">
+                            {selectedKanji?.mean || "Hãy vẽ vào ô vuông bên trái."}
+                        </p>
+                    </div>
                 </div>
             </div>
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-[2rem] border border-blue-100 p-6 flex flex-col justify-center items-center text-center gap-3 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 opacity-5 rounded-full -mr-10 -mt-10 group-hover:scale-110 transition-transform duration-500"></div>
-                <span className="text-4xl mb-2 group-hover:-translate-y-1 transition-transform duration-300">🚀</span>
-                <div><h4 className="font-bold text-blue-900 text-lg">Bạn muốn hiểu sâu chữ này?</h4><p className="text-sm text-blue-600/80 mb-4">Xem phân tích bộ thủ, cách nhớ và ví dụ.</p></div>
+
+            {/* Card Nút Chi Tiết (Chiều cao cố định) */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-[1.5rem] border border-blue-100 p-5 flex flex-col justify-center items-center text-center gap-2 relative overflow-hidden group flex-shrink-0">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500 opacity-5 rounded-full -mr-8 -mt-8 group-hover:scale-110 transition-transform duration-500"></div>
+                
+                <div className="flex items-center gap-2">
+                     <span className="text-2xl group-hover:-translate-y-1 transition-transform">🚀</span>
+                     <div className="text-left">
+                        <h4 className="font-bold text-blue-900 text-sm">Phân tích chuyên sâu?</h4>
+                        <p className="text-[10px] text-blue-600/80">Bộ thủ, cách nhớ & ví dụ</p>
+                     </div>
+                </div>
+
                 <button 
                     onClick={() => { if (selectedKanji) navigate(`/kanji/${selectedKanji.kanji}`); }}
                     disabled={!selectedKanji}
-                    className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full mt-2 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md shadow-blue-200 hover:bg-blue-700 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs uppercase tracking-widest"
                 >
-                    XEM CHI TIẾT & PHÂN TÍCH →
+                    Xem Chi Tiết →
                 </button>
             </div>
         </div>
