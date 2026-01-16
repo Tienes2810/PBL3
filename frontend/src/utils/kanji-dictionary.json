@@ -1,14 +1,15 @@
 [
   {
-    "kanji": "木",
-    "hanviet": "MỘC",
-    "mean": "Cây cối",
-    "onyomi": "ボク (boku), モク (moku)",
-    "kunyomi": "き (ki)",
-    "radical": "木 (Mộc - Cây)",
-    "strokes": 4,
-    "formation": "Tượng hình",
-    "detail": "Vẽ lại hình dáng cái cây: Nét ngang là cành, nét sổ là thân, hai nét phẩy là rễ cây cắm sâu xuống đất."
+    "kanji": "想",
+    "hanviet": "TƯỞNG",
+    "mean": "Suy nghĩ, tưởng tượng",
+    "onyomi": "ソウ (sou)",
+    "kunyomi": "おも (omo)",
+    "radical": "心 (Tâm)",
+    "components": "木 (Mộc), 目 (Mục), 心 (Tâm)", 
+    "strokes": 13,
+    "formation": "Hội ý",
+    "detail": "Gồm chữ Tương (相) ở trên và chữ Tâm (心) ở dưới. Tương (相) lại gồm Mộc (木) và Mục (目). Ý nghĩa: Nhìn cây (Mục - Mộc) và suy nghĩ bằng cả trái tim (Tâm)."
   },
   {
     "kanji": "休",
@@ -16,42 +17,10 @@
     "mean": "Nghỉ ngơi",
     "onyomi": "キュウ (kyuu)",
     "kunyomi": "やす (yasu)",
-    "radical": "人 (Nhân đứng - Người)",
+    "radical": "人 (Nhân)",
+    "components": "人 (Nhân), 木 (Mộc)",
     "strokes": 6,
-    "formation": "Hội ý (Ghép ý nghĩa)",
-    "detail": "Gồm bộ Nhân (人 - người) đứng cạnh bộ Mộc (木 - cây). Ý nghĩa: Người nông dân làm việc mệt mỏi thì dựa vào gốc cây để nghỉ ngơi."
-  },
-  {
-    "kanji": "林",
-    "hanviet": "LÂM",
-    "mean": "Rừng thưa",
-    "onyomi": "リン (rin)",
-    "kunyomi": "はやし (hayashi)",
-    "radical": "木 (Mộc - Cây)",
-    "strokes": 8,
     "formation": "Hội ý",
-    "detail": "Hai chữ Mộc (木) xếp cạnh nhau. Ý nghĩa: Nhiều cây tụ lại thì thành rừng."
-  },
-  {
-    "kanji": "森",
-    "hanviet": "SÂM",
-    "mean": "Rừng rậm",
-    "onyomi": "シン (shin)",
-    "kunyomi": "もり (mori)",
-    "radical": "木 (Mộc - Cây)",
-    "strokes": 12,
-    "formation": "Hội ý",
-    "detail": "Ba chữ Mộc (木) xếp chồng lên nhau. Ý nghĩa: Rất nhiều cây, cây cối rậm rạp hơn cả rừng (Lâm)."
-  },
-  {
-    "kanji": "水",
-    "hanviet": "THỦY",
-    "mean": "Nước",
-    "onyomi": "スイ (sui)",
-    "kunyomi": "みず (mizu)",
-    "radical": "水 (Thủy - Nước)",
-    "strokes": 4,
-    "formation": "Tượng hình",
-    "detail": "Vẽ lại hình ảnh dòng nước đang chảy ở giữa (nét móc), và những giọt nước bắn tung tóe sang hai bên."
+    "detail": "Người tựa vào cây nghỉ ngơi."
   }
 ]
