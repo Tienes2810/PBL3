@@ -1,10 +1,12 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import KanjiDetailPage from './pages/KanjiDetailPage'; 
-// 1. Import trang Profile mới
-import UserProfilePage from './pages/UserProfilePage';
+
+// 👇 Dòng này phải khớp với tên file UserProfile.jsx trong thư mục
+import UserProfilePage from './pages/UserProfile'; 
 
 function App() {
   return (
@@ -14,7 +16,7 @@ function App() {
       <Route path="/home" element={<HomePage />} />
       <Route path="/kanji/:character" element={<KanjiDetailPage />} />
       
-      {/* 2. Thêm Route Profile */}
+      {/* Route này giữ nguyên */}
       <Route path="/profile" element={<UserProfilePage />} />
     </Routes>
   );

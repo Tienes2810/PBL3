@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const supabase = require("./supabaseClient"); 
+const supabase = require("../frontend/src/supabaseClient"); 
 // ĐÃ XÓA: const kanjiDict = require("./kanji-dictionary.json"); -> Không cần nữa vì Frontend tự tra cứu rồi
 
 dotenv.config();

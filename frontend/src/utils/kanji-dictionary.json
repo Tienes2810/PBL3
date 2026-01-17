@@ -59,18 +59,18 @@
     "formation": "Tượng hình",
     "detail": "Hình dáng cái cây với rễ và cành."
   },
-  {
-    "kanji": "人",
-    "hanviet": "NHÂN",
-    "mean": "Người",
-    "onyomi": "ジン (jin), ニン (nin)",
-    "kunyomi": "ひと (hito)",
-    "radical": "人 (Nhân)",
-    "components": "人",
-    "strokes": 2,
-    "formation": "Tượng hình",
-    "detail": "Hình dáng con người đang đứng nghiêng."
-  },
+    {
+      "kanji": "人",
+      "hanviet": "NHÂN",
+      "mean": "Người",
+      "onyomi": "ジン (jin), ニン (nin)",
+      "kunyomi": "ひと (hito)",
+      "radical": "人 (Nhân)",
+      "components": "人",
+      "strokes": 2,
+      "formation": "Tượng hình",
+      "detail": "Hình dáng con người đang đứng nghiêng."
+    },
   {
     "kanji": "信",
     "hanviet": "TÍN",
