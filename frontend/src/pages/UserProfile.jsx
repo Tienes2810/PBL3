@@ -22,7 +22,7 @@ const Toast = ({ message, type, show, onClose }) => {
     if (!show) return null;
     const isSuccess = type === 'success';
     return (
-        <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-fade-in-down transition-all backdrop-blur-md ${isSuccess ? 'bg-black text-white' : 'bg-red-600 text-white'}`}>
+        <div className={`fixed top-6 right-6 z-[120] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-fade-in-down transition-all backdrop-blur-md ${isSuccess ? 'bg-black text-white' : 'bg-red-600 text-white'}`}>
             <span className="text-xl font-bold">{isSuccess ? '✓' : '!'}</span>
             <p className="text-sm font-bold tracking-wide">{message}</p>
             <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 font-bold px-2">✕</button>
@@ -30,46 +30,56 @@ const Toast = ({ message, type, show, onClose }) => {
     );
 };
 
-// --- 3. MODAL CHỌN AVATAR ---
-const AvatarSelector = ({ currentAvatar, onSelect, onClose }) => {
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
-            <div className="bg-white rounded-[2rem] p-8 max-w-xl w-full shadow-2xl animate-scale-up border border-gray-100" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h3 className="text-2xl font-black text-gray-900 tracking-tight">Chọn Linh Vật</h3>
-                        <p className="text-gray-400 font-medium text-sm">Chọn một người bạn đồng hành nhé!</p>
-                    </div>
-                    <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 font-bold transition-all">✕</button>
-                </div>
-                <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[50vh] overflow-y-auto p-2">
-                    {AVATAR_LIST.map((seed) => {
-                        const avatarUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`;
-                        const isSelected = currentAvatar === avatarUrl;
-                        return (
-                            <button 
-                                key={seed}
-                                type="button"
-                                onClick={() => onSelect(avatarUrl)}
-                                className={`aspect-square rounded-2xl overflow-hidden transition-all duration-300 group relative ${isSelected ? 'ring-4 ring-black scale-95' : 'hover:scale-105 hover:shadow-lg'}`}
-                            >
-                                <img src={avatarUrl} alt={seed} className="w-full h-full object-cover bg-gray-50" />
-                                {isSelected && <div className="absolute inset-0 bg-black/10 flex items-center justify-center"><span className="text-2xl">✓</span></div>}
-                            </button>
-                        )
-                    })}
-                </div>
+// --- 3. MODAL ĐĂNG XUẤT ---
+const LogoutModal = ({ onConfirm, onCancel }) => (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
+        <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl animate-scale-up text-center border border-gray-100">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                🚪
+            </div>
+            <h3 className="text-xl font-black text-gray-900 mb-2">Đăng xuất?</h3>
+            <p className="text-gray-500 text-sm font-medium mb-8">Bạn có chắc chắn muốn thoát khỏi tài khoản không?</p>
+            <div className="flex gap-3">
+                <button onClick={onCancel} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all">
+                    Hủy
+                </button>
+                <button onClick={onConfirm} className="flex-1 py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-200 transition-all">
+                    Đăng xuất
+                </button>
             </div>
         </div>
-    );
-};
+    </div>
+);
+
+// --- 4. MODAL CHỌN AVATAR ---
+const AvatarSelector = ({ currentAvatar, onSelect, onClose }) => (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+        <div className="bg-white rounded-[2rem] p-8 max-w-xl w-full shadow-2xl animate-scale-up border border-gray-100" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">Chọn Linh Vật</h3>
+                <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 font-bold transition-all">✕</button>
+            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[50vh] overflow-y-auto p-2">
+                {AVATAR_LIST.map((seed) => {
+                    const avatarUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`;
+                    const isSelected = currentAvatar === avatarUrl;
+                    return (
+                        <button key={seed} type="button" onClick={() => onSelect(avatarUrl)} className={`aspect-square rounded-2xl overflow-hidden transition-all duration-300 group relative ${isSelected ? 'ring-4 ring-black scale-95' : 'hover:scale-105 hover:shadow-lg'}`}>
+                            <img src={avatarUrl} alt={seed} className="w-full h-full object-cover bg-gray-50" />
+                            {isSelected && <div className="absolute inset-0 bg-black/10 flex items-center justify-center"><span className="text-2xl">✓</span></div>}
+                        </button>
+                    )
+                })}
+            </div>
+        </div>
+    </div>
+);
 
 const UserProfile = () => {
   const navigate = useNavigate();
-  // Lấy các hàm từ Context
+  // Lấy data và hàm update từ Context
   const { user, updateUserInfo, setUser, language, setLanguage } = useAppContext();
   
-  // Lấy bộ từ điển dựa trên ngôn ngữ hiện tại của Context
   const t = translations[language] || translations.vi;
 
   const [formData, setFormData] = useState({
@@ -80,9 +90,10 @@ const UserProfile = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
-  // --- LOAD DỮ LIỆU USER (CHỈ LOAD 1 LẦN) ---
+  // Load dữ liệu khi vào trang
   useEffect(() => {
     if (user) {
       setFormData(prev => ({
@@ -97,7 +108,6 @@ const UserProfile = () => {
         level: user.level || 'N5',
         avatar: user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=Sensei`
       }));
-      // ⚠️ TUYỆT ĐỐI KHÔNG SET NGÔN NGỮ Ở ĐÂY để tránh bị DB đè lại
     }
   }, [user]); 
 
@@ -106,11 +116,16 @@ const UserProfile = () => {
       setTimeout(() => setToast({ ...toast, show: false }), 3000);
   };
 
-  // --- HÀM ĐỔI NGÔN NGỮ (TẠM THỜI) ---
   const handleLanguageChange = (langCode) => {
-    // Chỉ đơn giản là đổi State trong Context
-    // Không gọi Server, không lưu LocalStorage (theo ý bạn là "mỗi lần vào tự chọn")
+    // 1. Đổi ngay trên giao diện
     setLanguage(langCode);
+    localStorage.setItem('appLang', langCode);
+    
+    // 2. Lưu ngầm vào DB (nếu cần, nhưng không bắt buộc chờ)
+    /* if(user?.email) {
+        supabase.from('users').update({ display_language: langCode }).eq('email', user.email).then(...);
+    }
+    */
   };
 
   const handleSave = async (e) => {
@@ -124,7 +139,6 @@ const UserProfile = () => {
     }
 
     try {
-      // Chuẩn bị dữ liệu gửi đi (KHÔNG GỬI display_language)
       const updates = {
         full_name: formData.fullName,
         phone: formData.phone,
@@ -137,14 +151,15 @@ const UserProfile = () => {
         ...(formData.newPassword && { password: formData.newPassword }) 
       };
 
+      // Gửi lên Supabase
       const { data, error } = await supabase.from('users').update(updates).eq('email', user.email).select();
 
       if (error) throw error;
 
       if (data.length > 0) {
-        // Cập nhật context user để UI mượt mà
+        // QUAN TRỌNG: Cập nhật Context để HomePage/Sidebar nhận diện ngay
         const newUserData = { ...user, ...updates };
-        updateUserInfo(newUserData);
+        updateUserInfo(newUserData); 
         localStorage.setItem('session', JSON.stringify(newUserData));
         
         setFormData(prev => ({...prev, currentPassword: '', newPassword: '', confirmPassword: ''}));
@@ -157,25 +172,28 @@ const UserProfile = () => {
     }
   };
 
-  const handleLogout = () => {
-    if(window.confirm(t.alert_logout)) {
+  const confirmLogout = () => {
       localStorage.removeItem('session');
       setUser(null);
       navigate('/auth');
-    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50/50 font-sans text-gray-900 flex flex-col md:flex-row">
       
-      {/* GLOBAL MODALS */}
+      {/* GLOBAL OVERLAYS */}
       <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({...toast, show: false})} />
+      
       {showAvatarModal && (
           <AvatarSelector 
             currentAvatar={formData.avatar} 
             onSelect={(url) => { setFormData({...formData, avatar: url}); setShowAvatarModal(false); }} 
             onClose={() => setShowAvatarModal(false)} 
           />
+      )}
+      
+      {showLogoutModal && (
+          <LogoutModal onConfirm={confirmLogout} onCancel={() => setShowLogoutModal(false)} />
       )}
 
       {/* --- SIDEBAR --- */}
@@ -195,7 +213,7 @@ const UserProfile = () => {
          </nav>
 
          <div className="p-6">
-             <button onClick={handleLogout} className="w-full py-4 text-red-500 font-bold bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all text-xs uppercase tracking-widest">
+             <button onClick={() => setShowLogoutModal(true)} className="w-full py-4 text-red-500 font-bold bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all text-xs uppercase tracking-widest">
                  {t.logout}
              </button>
          </div>
@@ -208,7 +226,7 @@ const UserProfile = () => {
             {/* HEADER AREA */}
             <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-12">
                 
-                {/* Avatar */}
+                {/* Avatar Wrapper */}
                 <div className="relative group cursor-pointer" onClick={() => setShowAvatarModal(true)}>
                     <div className="w-40 h-40 rounded-[2.5rem] bg-gray-50 overflow-hidden shadow-2xl border-[6px] border-white ring-1 ring-gray-100">
                         <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -232,7 +250,7 @@ const UserProfile = () => {
                         </div>
                     </div>
 
-                    {/* 🔥 THANH NGÔN NGỮ (CHỈ ĐỔI CLIENT, KHÔNG LƯU DB) */}
+                    {/* Language Switcher Pill */}
                     <div className="inline-flex items-center p-1.5 bg-white rounded-full shadow-lg border border-gray-100">
                         {LANGUAGES.map((lang) => {
                             const isActive = language === lang.code;
@@ -261,10 +279,10 @@ const UserProfile = () => {
             {/* FORM AREA */}
             <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-12">
                 
-                {/* LEFT: INFO */}
+                {/* LEFT COLUMN: INFO & BIO */}
                 <div className="lg:col-span-2 space-y-12">
                     
-                    {/* SECTION: THÔNG TIN CƠ BẢN */}
+                    {/* Basic Info */}
                     <div>
                         <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-6 border-b pb-2">
                              {t.profile_basic}
@@ -296,7 +314,7 @@ const UserProfile = () => {
                         </div>
                     </div>
 
-                    {/* SECTION: BIO & LEVEL */}
+                    {/* Bio & Level */}
                     <div>
                          <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-6 border-b pb-2">
                              MỤC TIÊU HỌC TẬP
@@ -330,7 +348,7 @@ const UserProfile = () => {
                     </div>
                 </div>
 
-                {/* RIGHT: SECURITY & SAVE */}
+                {/* RIGHT COLUMN: SECURITY & ACTIONS */}
                 <div className="space-y-10">
                     <div>
                         <h3 className="text-xs font-black text-red-500 uppercase tracking-widest mb-6 border-b border-red-100 pb-2">
