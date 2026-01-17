@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { translations } from '../utils/translations'; 
 import { getKanjiList } from '../utils/kanjiData';    
 import { useAppContext } from '../context/AppContext';
-// 1. IMPORT SUPABASE
 import { supabase } from '../supabaseClient';
 
-// --- (GIỮ NGUYÊN CÁC COMPONENT PHỤ CỦA BẠN: Notification, Icons, ShibaMascot...) ---
+// --- CÁC COMPONENT PHỤ (Giữ nguyên) ---
 const Notification = ({ message, type, onClose }) => {
   if (!message) return null;
   const isSuccess = type === 'success';
@@ -67,7 +66,6 @@ const AuthPage = () => {
 
   useEffect(() => {
     const fullKanjiList = getKanjiList();
-    // (Logic hiệu ứng bay giữ nguyên)
     const totalChars = 75; const lanes = 30; const slotWidth = 100 / lanes; 
     const chars = Array.from({ length: totalChars }).map((_, i) => {
       const currentLane = i % lanes;
@@ -81,7 +79,7 @@ const AuthPage = () => {
     setFloatingChars(chars);
   }, []);
 
-  // --- HÀM XỬ LÝ ĐĂNG NHẬP/ĐĂNG KÝ (SỬA DÙNG SUPABASE) ---
+  // --- HÀM XỬ LÝ ĐĂNG NHẬP/ĐĂNG KÝ (SỬ DỤNG LOGIC CŨ CỦA BẠN) ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg(''); 
@@ -96,38 +94,38 @@ const AuthPage = () => {
 
     try {
       if (isLogin) {
-        // --- 1. ĐĂNG NHẬP ---
+        // --- 1. ĐĂNG NHẬP (LOGIC CŨ - TRỰC TIẾP DB) ---
         const { data, error } = await supabase
           .from('users')
           .select('*')
           .eq('email', email)
-          .eq('password', password) // Lưu ý: Demo nên so sánh trực tiếp, thật thì cần hash
+          .eq('password', password)
           .single();
-        console.log("LOGIN EMAIL:", email);
-        console.log("DATA TỪ SUPABASE TRẢ VỀ:", data);
+        
         if (error || !data) {
           setErrorMsg("Sai tài khoản hoặc mật khẩu");
           showToast("Đăng nhập thất bại", "error");
         } else {
-          showToast("Đăng nhập thành công!", "success");
+          // --- THÀNH CÔNG: KHÔNG HIỆN TOAST, CHUYỂN TRANG NGAY ---
           
           // Lưu session kèm ngôn ngữ
           const sessionData = { ...data, language: language };
           localStorage.setItem('session', JSON.stringify(sessionData));
           setUser(sessionData);
 
-          setTimeout(() => navigate('/home'), 1500);
+          // Chuyển trang ngay lập tức
+          navigate('/home');
         }
 
       } else {
-        // --- 2. ĐĂNG KÝ ---
+        // --- 2. ĐĂNG KÝ (LOGIC CŨ) ---
         const { error } = await supabase
           .from('users')
           .insert([{ 
              email: email, 
              password: password,
-             username: email.split('@')[0], // <--- THÊM DÒNG NÀY (Lấy phần trước @ làm username)
-             full_name: email.split('@')[0], // Tên mặc định
+             username: email.split('@')[0], 
+             full_name: email.split('@')[0], 
              level: 'N5',
              streak: 0,
              goal: "Học 5 Kanji mỗi ngày",
@@ -150,12 +148,11 @@ const AuthPage = () => {
     }
   };
 
-  // --- GIỮ NGUYÊN GIAO DIỆN (RETURN) CỦA BẠN (Mình chỉ rút gọn để hiển thị logic thôi, bạn cứ dùng code giao diện cũ) ---
   return (
     <div className="min-h-screen relative flex items-center justify-center bg-gray-100 overflow-hidden font-sans">
       <Notification message={notification.message} type={notification.type} onClose={() => setNotification({ message: '', type: '' })} />
       
-      {/* (Phần Menu Ngôn ngữ giữ nguyên) */}
+      {/* Menu Ngôn ngữ */}
       <div className="absolute top-6 right-6 z-50">
         <div className="relative">
           <button onClick={() => setIsLangMenuOpen(!isLangMenuOpen)} className="flex items-center gap-3 bg-white/90 backdrop-blur border-2 border-gray-300 rounded-full px-6 py-3 shadow-md hover:bg-white transition-all active:scale-95">
@@ -174,7 +171,7 @@ const AuthPage = () => {
         </div>
       </div>
 
-      {/* (Phần Background Kanji giữ nguyên) */}
+      {/* Background Kanji */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
         {floatingChars.map((item) => (
           <span key={item.id} className="kanji-float" style={{ left: item.left, animationDuration: item.duration, animationDelay: item.delay, fontSize: item.size }}>{item.char}</span>
