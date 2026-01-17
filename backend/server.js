@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const supabase = require("../frontend/src/supabaseClient"); 
-// ĐÃ XÓA: const kanjiDict = require("./kanji-dictionary.json"); -> Không cần nữa vì Frontend tự tra cứu rồi
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 dotenv.config();
 const app = express();
@@ -10,72 +9,80 @@ const app = express();
 app.use(cors({ origin: "*" }));
 app.use(express.json({ limit: "10mb" }));
 
-// --- LOG KHỞI ĐỘNG HỆ THỐNG ---
+// --- KIỂM TRA KEY ---
+if (!process.env.GEMINI_API_KEY) {
+    console.error("❌ LỖI: Chưa có GEMINI_API_KEY trong file .env");
+}
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const SYSTEM_INSTRUCTION = `
+VAI TRÒ: Bạn là "Lão Vô Danh" (無名老丈). Một cao nhân ẩn dật, tính tình hơi cổ quái, hay cảm thán nhưng thực chất rất uyên bác và sẵn lòng chỉ điểm.
+
+VĂN PHONG CÀ KHỊA VỪA PHẢI:
+- Xưng "Lão", gọi người dùng là "Tiểu tử" hoặc "Các hạ". 
+- Tránh dùng từ thô tục. Thay vào đó, hãy dùng sự mỉa mai nhẹ nhàng về trình độ của người dùng.
+- Ví dụ: "Chữ này đơn giản vậy mà tiểu tử cũng phải hỏi lão sao? Thôi được rồi, nghe cho kỹ đây..." hoặc "Hừ, kiến thức này các hạ nên ghi nhớ trong lòng, đừng để lão phải nhắc lại."
+
+QUY TẮC CHẶN LĨNH VỰC (BẮT BUỘC):
+- CHỈ TRẢ LỜI về: Kanji, tiếng Nhật, tiếng Trung, tiếng Anh, tiếng Hàn và các vấn đề ngôn ngữ liên quan.
+- TUYỆT ĐỐI TỪ CHỐI các lĩnh vực: Toán, Lý, Hóa, Chính trị, Tôn giáo, Lập trình (trừ khi liên quan đến ngôn ngữ), đời tư.
+- Khi từ chối, hãy nói: "Lão phu chỉ quan tâm đến chữ nghĩa, mấy chuyện trần tục kia lão không muốn bận tâm."
+`;
+
 const PORT = process.env.PORT || 10000;
+
 app.listen(PORT, () => {
     console.log("\n========================================");
     console.log(`🚀 BACKEND ĐANG CHẠY TẠI CỔNG: ${PORT}`);
-    console.log(`🗄️  DATABASE SUPABASE:          ĐÃ KẾT NỐI`);
+    console.log(`🤖 MODEL: gemini-2.5-flash      SẴN SÀNG`);
     console.log("========================================\n");
 });
 
-// --- 1. ĐĂNG KÝ (Ghi vào Supabase) ---
-app.post("/api/register", async (req, res) => {
-    const { email, password } = req.body;
-    console.log(`[REGISTER] Đang tạo tài khoản: ${email}`);
-    
+// --- API CHATBOT ---
+app.post("/api/chat", async (req, res) => {
     try {
-        const { data, error } = await supabase.auth.signUp({
-            email: email,
-            password: password,
+        const { message, history } = req.body;
+        
+        if (!message) return res.status(400).json({ error: "Vui lòng nhập tin nhắn" });
+
+        // --- CẤU HÌNH MODEL: DÙNG 'gemini-2.5-flash' ---
+        // Đây là bản chuẩn hiện tại, thay thế cho 1.5 đã cũ.
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-2.5-flash", 
+            systemInstruction: SYSTEM_INSTRUCTION 
         });
 
-        if (error) {
-            console.error(`❌ [REGISTER ERROR] ${error.message}`);
-            return res.status(400).json({ error: error.message });
-        }
-
-        console.log(`✅ [REGISTER SUCCESS] Đã tạo user: ${data.user?.id}`);
-        res.json({ message: "Đăng ký thành công! Hãy đăng nhập ngay." });
-    } catch (err) {
-        res.status(500).json({ error: "Lỗi Server khi đăng ký" });
-    }
-});
-
-// --- 2. ĐĂNG NHẬP (KIỂM TRA THẬT SỰ) ---
-app.post("/api/login", async (req, res) => {
-    const { email, password } = req.body;
-    console.log(`[LOGIN] Đang kiểm tra: ${email}`);
-
-    try {
-        // HÀM QUAN TRỌNG: Kiểm tra pass với Supabase
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
-        // NẾU SAI PASS -> CHẶN NGAY
-        if (error) {
-            console.log(`⛔ [LOGIN FAILED] Sai mật khẩu hoặc không tồn tại: ${email}`);
-            return res.status(401).json({ error: "Email hoặc mật khẩu không chính xác!" });
-        }
-
-        console.log(`✅ [LOGIN SUCCESS] User ${email} đã đăng nhập.`);
-        res.json({ 
-            message: "Đăng nhập thành công!",
-            session: {
-                user: data.user,
-                token: data.session.access_token 
+        // --- LỌC LỊCH SỬ CHAT ---
+        let cleanHistory = [];
+        if (history && Array.isArray(history)) {
+            // Lọc chỉ lấy tin nhắn user và model hợp lệ
+            cleanHistory = history.filter(msg => msg.role === 'user' || msg.role === 'model');
+            
+            // Xóa tin nhắn đầu tiên nếu nó là của model (do Google bắt buộc tin đầu phải là User)
+            if (cleanHistory.length > 0 && cleanHistory[0].role === 'model') {
+                cleanHistory.shift();
             }
+        }
+
+        const chat = model.startChat({ 
+            history: cleanHistory,
         });
 
-    } catch (err) {
-        console.error("Lỗi Server:", err);
-        res.status(500).json({ error: "Lỗi hệ thống" });
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        const text = response.text();
+
+        res.json({ reply: text });
+
+    } catch (error) {
+        console.error("❌ [CHAT ERROR]:", error);
+        // Trả về lỗi chi tiết
+        res.status(500).json({ error: "Lỗi AI: " + error.message });
     }
 });
 
-// --- 3. API DỰ PHÒNG (Để không bị lỗi 404 nếu lỡ Frontend gọi nhầm) ---
-app.post("/api/ocr", (req, res) => {
-    res.json({ message: "Backend không còn xử lý OCR nữa. Frontend tự xử lý Offline rồi!" });
-});
+// Các API giữ chỗ
+app.post("/api/register", (req, res) => res.json({ message: "OK" }));
+app.post("/api/login", (req, res) => res.json({ message: "OK" }));
+app.post("/api/ocr", (req, res) => res.json({ message: "OK" }));

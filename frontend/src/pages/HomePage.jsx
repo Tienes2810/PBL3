@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import KanjiCanvas from '../components/KanjiCanvas';
 import dictionaryData from '../utils/kanji-dictionary.json';
-import UserProfile from '../components/UserProfile'; // Import component vừa sửa ở bước 1
+import UserProfile from '../components/UserProfile'; 
 import { useAppContext } from '../context/AppContext';
 
 const HomePage = () => {
@@ -106,7 +106,11 @@ const HomePage = () => {
           <div className="text-black bg-gray-100 px-4 py-3.5 rounded-2xl cursor-pointer flex items-center gap-3 shadow-sm transition-all">
               <span className="text-lg">✍️</span> {t?.menu_handwriting || "Tra cứu"}
           </div>
-          <div className="hover:text-black px-4 py-3.5 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer flex items-center gap-3">
+          {/* CẬP NHẬT: Thêm sự kiện onClick để chuyển sang trang Chat */}
+          <div 
+            onClick={() => navigate('/chat')} 
+            className="hover:text-black px-4 py-3.5 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer flex items-center gap-3"
+          >
               <span className="text-lg">🤖</span> {t?.menu_chatbot || "Chatbot"}
           </div>
           <div className="hover:text-black px-4 py-3.5 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer flex items-center gap-3">
@@ -116,10 +120,9 @@ const HomePage = () => {
         
         {/* BOTTOM AREA */}
         <div className="mt-auto space-y-4">
-            {/* MINI PROFILE (Tự động cập nhật do dùng Context ở bước 1) */}
+            {/* MINI PROFILE */}
             <UserProfile />
-            
-            {/* ⚠️ ĐÃ XÓA NÚT ĐĂNG XUẤT Ở ĐÂY THEO YÊU CẦU */}
+            {/* Nút đăng xuất đã được xóa theo yêu cầu */}
         </div>
       </aside>
 
