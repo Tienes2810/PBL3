@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-// KHÔNG DÙNG THƯ VIỆN ĐỂ TRÁNH LỖI VERSION
+
 dotenv.config();
 const app = express();
 
@@ -21,45 +21,18 @@ app.use(express.json({ limit: "10mb" }));
 const PORT = process.env.PORT || 10000;
 const API_KEY = process.env.GEMINI_API_KEY;
 
-// --- ROUTE KIỂM TRA MODEL (QUAN TRỌNG) ---
-// Truy cập vào đây để xem Key của bạn dùng được model nào
-app.get("/api/check-models", async (req, res) => {
-    try {
-        if (!API_KEY) return res.status(500).send("❌ Chưa có API Key!");
-        
-        const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        if (data.error) {
-            return res.status(400).json(data.error);
-        }
-
-        // Lọc ra các model Gemini
-        const models = data.models
-            ?.filter(m => m.name.includes("gemini"))
-            ?.map(m => m.name.replace("models/", ""));
-
-        res.json({ 
-            message: "Danh sách Model Key này dùng được:",
-            available_models: models 
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get("/", (req, res) => res.send("🚀 Backend Lão Vô Danh đang chạy!"));
+// --- ROUTE GỐC ---
+app.get("/", (req, res) => res.send("🚀 Backend Lão Vô Danh đang chạy (Gemini Pro)!"));
 
 // --- API CHATBOT ---
 app.post("/api/chat", async (req, res) => {
     try {
         const { message, history } = req.body;
         
-        if (!API_KEY) return res.status(500).json({ error: "Thiếu API Key server" });
+        if (!API_KEY) return res.status(500).json({ error: "Thiếu API Key" });
         if (!message) return res.status(400).json({ error: "Vui lòng nhập tin nhắn" });
 
-        // --- XỬ LÝ LỊCH SỬ CHAT ---
+        // --- XỬ LÝ LỊCH SỬ ---
         let contents = [];
         if (history && Array.isArray(history)) {
             contents = history
@@ -70,12 +43,11 @@ app.post("/api/chat", async (req, res) => {
                 }));
             if (contents.length > 0 && contents[0].role === 'model') contents.shift();
         }
-        
         contents.push({ role: "user", parts: [{ text: message }] });
 
-        // 🔥 THAY ĐỔI QUAN TRỌNG: DÙNG TÊN ĐẦY ĐỦ "gemini-1.5-flash-001"
-        // Nếu vẫn lỗi, hãy thử đổi thành "gemini-pro" (bản 1.0 siêu ổn định)
-        const MODEL_NAME = "gemini-1.5-flash-001"; 
+        // 🔥 QUAN TRỌNG: DÙNG MODEL "gemini-pro" (Bản ổn định nhất)
+        // Nếu bản này chạy được, sau này ta sẽ tính chuyện lên 1.5 sau.
+        const MODEL_NAME = "gemini-pro"; 
         
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
         
@@ -84,11 +56,16 @@ app.post("/api/chat", async (req, res) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: contents,
-                system_instruction: {
-                    parts: {
-                        text: `VAI TRÒ: Bạn là "Lão Vô Danh" (無名老丈)... (giữ nguyên prompt cũ)`
-                    }
-                }
+                // gemini-pro đôi khi kén chọn format system_instruction, 
+                // nên ta tạm bỏ qua hoặc đưa vào prompt nếu cần thiết.
+                // Ở đây ta chèn thẳng vào tin nhắn đầu tiên cho chắc ăn.
+                contents: [
+                    {
+                        role: "user",
+                        parts: [{ text: `VAI TRÒ: Bạn là "Lão Vô Danh"... (giữ vai trò này nhé) \n\n Câu hỏi: ${message}` }]
+                    },
+                    ...contents.slice(1) // Ghép phần còn lại nếu có
+                ]
             })
         });
 
@@ -96,12 +73,15 @@ app.post("/api/chat", async (req, res) => {
 
         if (!response.ok) {
             console.error("Google API Error:", data);
-            // Nếu lỗi 404 ở đây, nghĩa là tên model vẫn sai với Key này
+            // In ra danh sách model hợp lệ để debug
+            if (data.error?.code === 404) {
+                 throw new Error(`Key của bạn không dùng được model ${MODEL_NAME}. Hãy thử tạo Key mới.`);
+            }
             throw new Error(data.error?.message || "Lỗi Google API");
         }
 
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error("AI không trả lời (Empty response)");
+        if (!text) throw new Error("AI không trả lời.");
 
         res.json({ reply: text });
 
