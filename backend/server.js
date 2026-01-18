@@ -1,19 +1,20 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
+// Dùng thư viện này là chuẩn nhất cho API Key miễn phí (AIzaSy...)
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 dotenv.config();
 const app = express();
 
 // --- 1. CẤU HÌNH CORS (QUAN TRỌNG) ---
-// Cho phép cả Localhost (để bạn test) và Vercel (để chạy thật)
+// Lão đã cập nhật cổng 2103 theo ý ngươi
 const corsOptions = {
     origin: [
-        "http://localhost:2103",             // Frontend chạy ở máy bạn
+        "http://localhost:2103",             // Frontend chạy ở máy local (cổng mới)
         "https://kanjilearning.vercel.app"   // Frontend chạy trên Vercel
     ],
-    credentials: true, // Cho phép gửi cookie/header xác thực nếu cần
+    credentials: true, 
     methods: ["GET", "POST", "OPTIONS"]
 };
 
@@ -25,7 +26,7 @@ if (!process.env.GEMINI_API_KEY) {
     console.error("❌ LỖI: Chưa có GEMINI_API_KEY trong file .env hoặc trên Render Environment");
 }
 
-// Khởi tạo Gemini (Lưu ý: Phải dùng thư viện mới nhất)
+// Khởi tạo Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const SYSTEM_INSTRUCTION = `
@@ -63,9 +64,7 @@ app.post("/api/chat", async (req, res) => {
         
         if (!message) return res.status(400).json({ error: "Vui lòng nhập tin nhắn" });
 
-        // --- 2. CẤU HÌNH MODEL: QUAY VỀ 1.5 FLASH ---
-        // Lý do: Bản 2.5 Flash giới hạn 20 req/ngày (quá ít). 
-        // Bản 1.5 Flash giới hạn 1500 req/ngày (thoải mái dev).
+        // --- 2. CẤU HÌNH MODEL: QUAY VỀ 1.5 FLASH (Bản chuẩn) ---
         const model = genAI.getGenerativeModel({ 
             model: "gemini-1.5-flash", 
             systemInstruction: SYSTEM_INSTRUCTION 
@@ -74,10 +73,10 @@ app.post("/api/chat", async (req, res) => {
         // --- LỌC LỊCH SỬ CHAT ---
         let cleanHistory = [];
         if (history && Array.isArray(history)) {
-            // Lọc chỉ lấy tin nhắn user và model hợp lệ
+            // Chỉ lấy tin nhắn user và model, loại bỏ tin nhắn lỗi
             cleanHistory = history.filter(msg => msg.role === 'user' || msg.role === 'model');
             
-            // Xóa tin nhắn đầu tiên nếu nó là của model (Google bắt buộc tin đầu phải là User)
+            // Google bắt buộc tin nhắn đầu tiên trong lịch sử phải là của User
             if (cleanHistory.length > 0 && cleanHistory[0].role === 'model') {
                 cleanHistory.shift();
             }
@@ -95,7 +94,14 @@ app.post("/api/chat", async (req, res) => {
 
     } catch (error) {
         console.error("❌ [CHAT ERROR]:", error);
-        // Trả về lỗi chi tiết để dễ debug trên Frontend
+        
+        // Bắt lỗi 404 nếu quên update thư viện
+        if (error.message.includes("404") || error.message.includes("not found")) {
+            return res.status(500).json({ 
+                error: "Lỗi Server: Thư viện Gemini trên server quá cũ. Hãy chạy 'npm install @google/generative-ai@latest' và push lại file package.json." 
+            });
+        }
+        
         res.status(500).json({ error: "Lỗi AI: " + error.message });
     }
 });
