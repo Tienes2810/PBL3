@@ -9,23 +9,24 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { t, user } = useAppContext();
   
-  // 1. HIỆU ỨNG KANJI BAY
+  // 1. HIỆU ỨNG KANJI BAY (Chuẩn từ AuthPage)
   const [floatingChars, setFloatingChars] = useState([]);
   
   useEffect(() => {
-    const fullKanjiList = getKanjiList ? getKanjiList() : ["道", "夢", "愛", "旅", "心", "時", "空", "海", "山", "風"];
+    // List chữ cái
+    const fullKanjiList = getKanjiList ? getKanjiList() : ["道", "夢", "愛", "旅", "心", "時", "空", "海", "山", "風", "林", "火"];
     
-    const totalChars = 75; 
-    const lanes = 30; 
+    // Cấu hình
+    const totalChars = 50; 
+    const lanes = 20; 
     const slotWidth = 100 / lanes; 
 
     const chars = Array.from({ length: totalChars }).map((_, i) => {
       const currentLane = i % lanes;
-      const left = (currentLane * slotWidth) + (slotWidth / 2) + "%";
-      
-      const duration = "40s"; 
-      const delay = -(Math.random() * 80) + "s";
-      const size = Math.random() * 1.5 + 1.2 + "rem";
+      const left = (currentLane * slotWidth) + (slotWidth / 2) + "%"; // Canh giữa làn
+      const duration = Math.random() * 20 + 25 + "s"; // Tốc độ vừa phải
+      const delay = -(Math.random() * 50) + "s";
+      const size = Math.random() * 2 + 1.5 + "rem"; 
       const randomChar = fullKanjiList[Math.floor(Math.random() * fullKanjiList.length)];
       
       return { id: i, char: randomChar, left, duration, delay, size };
@@ -33,7 +34,7 @@ const HomePage = () => {
     setFloatingChars(chars);
   }, []);
 
-  // 2. Random Kanji
+  // 2. Random Kanji (Mỗi ngày 1 chữ)
   const dailyKanji = useMemo(() => {
     if (!dictionaryData || dictionaryData.length === 0) return null;
     const today = new Date().getDate(); 
@@ -41,13 +42,21 @@ const HomePage = () => {
     return dictionaryData[index];
   }, []);
 
+  // 3. Random Câu Thơ (Mỗi lần F5 là đổi)
+  const randomQuote = useMemo(() => {
+      // Nếu có danh sách quote thì random, không thì dùng câu mặc định
+      const quotes = t?.home_quotes || ["Tựa như lữ khách chốn nhân gian\nCứ mãi theo đuổi thứ lang bạt hư vô"];
+      return quotes[Math.floor(Math.random() * quotes.length)];
+  }, [t]); // Chạy lại khi đổi ngôn ngữ
+
   return (
     <div className="flex h-screen bg-[#Fdfdfd] font-sans text-slate-900 overflow-hidden relative">
       
       {/* --- BACKGROUND KANJI BAY --- */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
          {floatingChars.map(item => (
-             <span key={item.id} className="kanji-float"
+             <span key={item.id} 
+                className="kanji-float"
                 style={{
                     left: item.left,
                     fontSize: item.size,
@@ -70,9 +79,8 @@ const HomePage = () => {
             
             {/* CỘT TRÁI */}
             <div className="lg:col-span-8 flex flex-col gap-8">
-                <div className="bg-white/90 backdrop-blur-md p-10 rounded-[3rem] shadow-xl shadow-gray-100/50 border border-gray-50 relative overflow-hidden group">
+                <div className="bg-white/90 backdrop-blur-sm p-10 rounded-[3rem] shadow-xl shadow-gray-100/50 border border-gray-50 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-50 rounded-full blur-3xl -mr-16 -mt-16 opacity-50 group-hover:scale-110 transition-transform duration-1000"></div>
-                    
                     <div className="relative z-10">
                         <span className="inline-block px-4 py-1.5 rounded-full bg-black text-white text-[10px] font-black uppercase tracking-widest mb-4 shadow-lg">
                             {new Date().toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}
@@ -81,15 +89,16 @@ const HomePage = () => {
                             {t?.home_welcome || "Xin chào, Lữ khách!"}
                         </h1>
                         <div className="relative pl-6 border-l-4 border-gray-200">
-                            <p className="text-xl text-gray-600 font-medium whitespace-pre-wrap leading-relaxed">
-                                "{t?.home_quote || "Tựa như lữ khách chốn nhân gian\nCứ mãi theo đuổi thứ lang bạt hư vô"}"
+                            {/* HIỂN THỊ CÂU THƠ RANDOM */}
+                            <p className="text-xl text-gray-600 font-medium whitespace-pre-wrap leading-relaxed animate-fade-in">
+                                "{randomQuote}"
                             </p>
                         </div>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <button onClick={() => navigate('/viet-tay')} className="group bg-white/90 backdrop-blur-md p-6 rounded-[2.5rem] shadow-lg border border-gray-100 hover:shadow-2xl hover:border-blue-100 transition-all text-left relative overflow-hidden h-48 flex flex-col justify-between">
+                    <button onClick={() => navigate('/viet-tay')} className="group bg-white/90 backdrop-blur-sm p-6 rounded-[2.5rem] shadow-lg border border-gray-100 hover:shadow-2xl hover:border-blue-100 transition-all text-left relative overflow-hidden h-48 flex flex-col justify-between">
                         <div className="absolute right-[-20px] top-[-20px] text-[8rem] opacity-5 font-serif group-hover:scale-110 transition-transform">書</div>
                         <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-3xl mb-4 group-hover:bg-blue-600 group-hover:text-white transition-colors">🖌️</div>
                         <div>
@@ -98,7 +107,7 @@ const HomePage = () => {
                         </div>
                     </button>
 
-                    <button onClick={() => navigate('/chat')} className="group bg-slate-900/95 backdrop-blur-md p-6 rounded-[2.5rem] shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all text-left relative overflow-hidden h-48 flex flex-col justify-between">
+                    <button onClick={() => navigate('/chat')} className="group bg-slate-900/95 backdrop-blur-sm p-6 rounded-[2.5rem] shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all text-left relative overflow-hidden h-48 flex flex-col justify-between">
                         <div className="absolute right-[-20px] top-[-20px] text-[8rem] text-white opacity-5 font-serif group-hover:rotate-12 transition-transform">智</div>
                         <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center mb-4 backdrop-blur-sm group-hover:bg-white group-hover:text-slate-900 transition-colors">
                             <svg className="w-8 h-8" viewBox="0 0 100 100" fill="currentColor" stroke="none">
@@ -117,7 +126,7 @@ const HomePage = () => {
             {/* CỘT PHẢI */}
             <div className="lg:col-span-4 flex flex-col gap-6">
                 {dailyKanji && (
-                    <div onClick={() => navigate(`/kanji/${dailyKanji.kanji}`)} className="bg-white/90 backdrop-blur-md p-8 rounded-[3rem] shadow-xl border border-gray-100 flex flex-col items-center justify-center text-center cursor-pointer hover:border-red-100 transition-all group h-full min-h-[300px]">
+                    <div onClick={() => navigate(`/kanji/${dailyKanji.kanji}`)} className="bg-white/90 backdrop-blur-sm p-8 rounded-[3rem] shadow-xl border border-gray-100 flex flex-col items-center justify-center text-center cursor-pointer hover:border-red-100 transition-all group h-full min-h-[300px]">
                         <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.3em] mb-4">{t?.home_daily_kanji || "HÁN TỰ HÔM NAY"}</span>
                         <div className="relative">
                             <div className="absolute inset-0 bg-red-500 rounded-full blur-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-500"></div>
@@ -131,7 +140,8 @@ const HomePage = () => {
                 )}
                 <div className="bg-gray-50/80 backdrop-blur-md p-6 rounded-[2.5rem] border border-gray-100 flex items-center justify-between">
                     <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t?.home_progress || "Tiến độ"}</p>
+                        {/* Cập nhật nhãn mới: CHUỖI RÈN LUYỆN */}
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t?.home_streak || "CHUỖI RÈN LUYỆN"}</p>
                         <p className="text-2xl font-black text-slate-800 mt-1">🔥 3 Ngày</p>
                     </div>
                     <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-black flex items-center justify-center text-[10px] font-bold">15%</div>
@@ -140,33 +150,30 @@ const HomePage = () => {
          </div>
       </main>
 
-      {/* --- CSS ĐÃ SỬA: BAY TUỐT LÊN TRÊN (-150vh) MỚI BIẾN MẤT --- */}
+      {/* --- CSS: FONT MỀM MẠI + BAY TUỐT LÊN CAO --- */}
       <style>{`
         @keyframes floatUp {
-            0% {
-                transform: translateY(110vh); /* Bắt đầu tít dưới đáy */
-                opacity: 0;
-            }
-            5% {
-                opacity: 0.06; /* Hiện lên */
-            }
-            95% {
-                opacity: 0.06; /* Vẫn giữ nguyên độ rõ khi lên gần đỉnh */
-            }
-            100% {
-                transform: translateY(-150vh); /* Bay hẳn ra ngoài màn hình rất xa */
-                opacity: 0; /* Lúc này mới biến mất */
-            }
+            0% { transform: translateY(100vh); opacity: 0; }
+            5% { opacity: 0.06; }
+            95% { opacity: 0.06; }
+            100% { transform: translateY(-150vh); opacity: 0; } /* Bay quá đỉnh màn hình */
         }
         .kanji-float {
             position: absolute;
-            bottom: -60px; /* Vị trí khởi điểm (nhưng animation sẽ ghi đè translateY) */
+            bottom: -60px;
             font-family: 'Yuji Syuku', serif;
             animation-name: floatUp;
             animation-timing-function: linear;
             animation-iteration-count: infinite;
             color: #000000;
             opacity: 0.06;
+        }
+        .animate-fade-in {
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </div>
