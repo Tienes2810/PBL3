@@ -52,7 +52,7 @@ app.post("/api/chat", async (req, res) => {
         // Tiểu tử muốn dùng "2.5 Lite", ta đoán tên nó là một trong các cái dưới.
         // Nếu cái này lỗi, hãy thử bỏ chữ "-lite" đi: "gemini-2.5-flash"
         // =================================================================
-        const MODEL_NAME = "gemini-2.5-flash-native-audio-dialog"; 
+        const MODEL_NAME = "gemini-embedding-1.0"; 
 
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
         
