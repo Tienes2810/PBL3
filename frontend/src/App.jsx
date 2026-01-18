@@ -1,26 +1,36 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
-import AuthPage from './pages/AuthPage';
+// ... Các import cũ
 import HomePage from './pages/HomePage';
-import KanjiDetailPage from './pages/KanjiDetailPage'; 
+import WritePage from './pages/WritePage';
+import AiChatPage from './pages/AiChatPage';
+import LoginPage from './pages/LoginPage';
+import AuthPage from './pages/AuthPage';
+import UserProfilePage from './pages/UserProfilePage';
 
-// 👇 Dòng này phải khớp với tên file UserProfile.jsx trong thư mục
-import UserProfilePage from './pages/UserProfile'; 
-import AiChatPage from './pages/AiChatPage'; // 1. Import trang mới
+// ✅ 1. IMPORT TRANG CHI TIẾT (Kiểm tra lại tên file thực tế của bạn nhé)
+import KanjiDetailPage from './pages/KanjiDetailPage'; 
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/home" replace />} />
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/home" element={<HomePage />} />
-      <Route path="/kanji/:character" element={<KanjiDetailPage />} />
-      <Route path="/chat" element={<AiChatPage />} />
-      
-      {/* Route này giữ nguyên */}
-      <Route path="/profile" element={<UserProfilePage />} />
-    </Routes>
+    <div className="App min-h-screen bg-[#fdfbf7]">
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/viet-tay" element={<WritePage />} />
+        <Route path="/chat" element={<AiChatPage />} />
+        <Route path="/profile" element={<UserProfilePage />} />
+        
+        {/* ✅ 2. THÊM ROUTE NÀY ĐỂ BẤM VÀO NÚT "HIỂU SÂU" SẼ CHẠY */}
+        <Route path="/kanji/:kanji" element={<KanjiDetailPage />} />
+
+        {/* Auth & Redirect */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        <Route path="/home" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
   );
 }
 

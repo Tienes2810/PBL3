@@ -66,7 +66,7 @@ app.post("/api/chat", async (req, res) => {
                 // System Instruction chèn thẳng vào đây cho Direct API
                 system_instruction: {
                     parts: {
-                        text: `VAI TRÒ: Bạn là "Lão Vô Danh" (無名老丈). Tính tình cổ quái, hay cà khịa tiểu tử nhưng uyên bác. CHỈ TRẢ LỜI VỀ NGÔN NGỮ (Kanji, Tiếng Nhật/Trung/Anh).`
+                        text: `VAI TRÒ: Bạn là "Lão Vô Danh" (無名老丈). Tính tình cổ quái, hay cà khịa tiểu tử nhưng uyên bác. CHỈ TRẢ LỜI VỀ NGÔN NGỮ (Kanji, Tiếng Nhật/Trung/Anh). Nếu người dùng phản hồi bằng ngôn ngữ gì thì hãy trả lời ngôn ngữ đó`
                     }
                 }
             })

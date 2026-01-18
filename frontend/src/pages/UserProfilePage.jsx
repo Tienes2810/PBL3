@@ -1,198 +1,342 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// 1. Import Context để lấy dữ liệu toàn cục
 import { useAppContext } from '../context/AppContext';
+import { supabase } from '../supabaseClient'; 
+import { translations } from '../utils/translations'; 
 
-const UserProfilePage = () => {
+// --- 1. CẤU HÌNH ---
+const LANGUAGES = [
+    { code: 'vi', label: 'VN', full: 'Tiếng Việt' },
+    { code: 'en', label: 'US', full: 'English' },
+    { code: 'jp', label: 'JP', full: '日本語' },
+    { code: 'cn', label: 'CN', full: '中文' },
+    { code: 'kr', label: 'KR', full: '한국어' }
+];
+
+const AVATAR_LIST = [
+  'Felix', 'Aneka', 'Zoe', 'Midnight', 'Bear', 'Cat', 'Dog', 'Tiger', 'Panda', 'Lion', 'Rabbit', 'Sensei', 'Geisha', 'Ninja'
+];
+
+// --- 2. TOAST ---
+const Toast = ({ message, type, show, onClose }) => {
+    if (!show) return null;
+    const isSuccess = type === 'success';
+    return (
+        <div className={`fixed top-6 right-6 z-[120] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl animate-fade-in-down transition-all backdrop-blur-md ${isSuccess ? 'bg-black text-white' : 'bg-red-600 text-white'}`}>
+            <span className="text-xl font-bold">{isSuccess ? '✓' : '!'}</span>
+            <p className="text-sm font-bold tracking-wide">{message}</p>
+            <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 font-bold px-2">✕</button>
+        </div>
+    );
+};
+
+// --- 3. MODAL ĐĂNG XUẤT (ĐÃ DỊCH) ---
+const LogoutModal = ({ onConfirm, onCancel, t }) => (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
+        <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl animate-scale-up text-center border border-gray-100">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                🚪
+            </div>
+            <h3 className="text-xl font-black text-gray-900 mb-2">{t?.menu_logout}?</h3>
+            <p className="text-gray-500 text-sm font-medium mb-8">{t?.alert_logout_confirm}</p>
+            <div className="flex gap-3">
+                <button onClick={onCancel} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all">
+                    {t?.btn_cancel}
+                </button>
+                <button onClick={onConfirm} className="flex-1 py-3 rounded-xl font-bold bg-red-500 text-white hover:bg-red-600 shadow-lg shadow-red-200 transition-all">
+                    {t?.menu_logout}
+                </button>
+            </div>
+        </div>
+    </div>
+);
+
+// --- 4. MODAL AVATAR (ĐÃ DỊCH) ---
+const AvatarSelector = ({ currentAvatar, onSelect, onClose, t }) => (
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={onClose}>
+        <div className="bg-white rounded-[2rem] p-8 max-w-xl w-full shadow-2xl animate-scale-up border border-gray-100" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-black text-gray-900 tracking-tight">{t?.modal_avatar_title || "Avatar"}</h3>
+                <button onClick={onClose} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center hover:bg-gray-100 font-bold transition-all">✕</button>
+            </div>
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-4 max-h-[50vh] overflow-y-auto p-2">
+                {AVATAR_LIST.map((seed) => {
+                    const avatarUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=${seed}`;
+                    const isSelected = currentAvatar === avatarUrl;
+                    return (
+                        <button key={seed} type="button" onClick={() => onSelect(avatarUrl)} className={`aspect-square rounded-2xl overflow-hidden transition-all duration-300 group relative ${isSelected ? 'ring-4 ring-black scale-95' : 'hover:scale-105 hover:shadow-lg'}`}>
+                            <img src={avatarUrl} alt={seed} className="w-full h-full object-cover bg-gray-50" />
+                            {isSelected && <div className="absolute inset-0 bg-black/10 flex items-center justify-center"><span className="text-2xl">✓</span></div>}
+                        </button>
+                    )
+                })}
+            </div>
+        </div>
+    </div>
+);
+
+// --- COMPONENT CHÍNH ---
+const UserProfilePage = () => { 
   const navigate = useNavigate();
+  const { user, updateUserInfo, setUser, language, setLanguage } = useAppContext();
   
-  // 2. Lấy user, hàm cập nhật và bộ từ điển (t) từ Context
-  // (Không khai báo biến translations ở đây nữa vì đã có trong AppContext)
-  const { user, updateUserInfo, t } = useAppContext();
+  // Lấy bộ từ điển
+  const t = translations[language] || translations.vi;
 
-  // State local để quản lý form nhập liệu
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
-    country: "",
-    language: "vi", 
-    address: "",
-    level: "N5",
-    exp: 0,
-    maxExp: 500,
-    username: "",
-    joinDate: ""
+    fullName: '', email: '', phone: '', birthdate: '', address: '', country: 'Vietnam',
+    currentPassword: '', newPassword: '', confirmPassword: '', 
+    avatar: '', bio: '', level: 'N5'
   });
 
-  // 3. Khi mở trang, điền dữ liệu từ Global State vào Form
+  const [isLoading, setIsLoading] = useState(false);
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+
   useEffect(() => {
     if (user) {
-      setFormData(prev => ({ ...prev, ...user }));
+      setFormData(prev => ({
+        ...prev,
+        fullName: user.full_name || user.fullName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        birthdate: user.birthdate || '',
+        address: user.address || '',
+        country: user.country || 'Vietnam',
+        bio: user.bio || '',
+        level: user.level || 'N5',
+        avatar: user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=Sensei`
+      }));
     }
-  }, [user]);
+  }, [user]); 
 
-  const handleChangeInfo = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+  const showToast = (message, type = 'success') => {
+      setToast({ show: true, message, type });
+      setTimeout(() => setToast({ ...toast, show: false }), 3000);
   };
 
-  const handleSave = () => {
-    // 4. GỌI HÀM CẬP NHẬT TOÀN APP
-    // Khi chạy hàm này, Context sẽ lưu ngôn ngữ mới và đổi toàn bộ giao diện App
-    updateUserInfo(formData);
-    alert(t.alert_save_success);
+  const handleLanguageChange = (langCode) => {
+    setLanguage(langCode);
+    localStorage.setItem('appLang', langCode);
   };
 
-  const handleLogout = () => {
-    if (window.confirm(t.alert_logout)) {
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
+        showToast(t.err_pass_match || "Mật khẩu không khớp", 'error');
+        setIsLoading(false);
+        return;
+    }
+
+    try {
+      if (formData.newPassword) {
+          if (!formData.currentPassword) {
+              showToast(t.err_pass_empty || "Thiếu mật khẩu hiện tại", 'error');
+              setIsLoading(false);
+              return;
+          }
+
+          const { data: dbUser, error: fetchError } = await supabase
+              .from('users')
+              .select('password')
+              .eq('email', user.email)
+              .single();
+
+          if (fetchError || !dbUser) throw new Error("Lỗi xác thực người dùng");
+
+          if (dbUser.password !== formData.currentPassword) {
+              showToast(t.err_pass_wrong || "Mật khẩu sai", 'error');
+              setIsLoading(false);
+              return;
+          }
+      }
+
+      const updates = {
+        full_name: formData.fullName,
+        phone: formData.phone,
+        birthdate: formData.birthdate || null,
+        address: formData.address,
+        country: formData.country,
+        bio: formData.bio,
+        level: formData.level,
+        avatar: formData.avatar,
+        ...(formData.newPassword && { password: formData.newPassword })
+      };
+
+      const { data, error } = await supabase.from('users').update(updates).eq('email', user.email).select();
+
+      if (error) throw error;
+
+      if (data.length > 0) {
+        const newUserData = { ...user, ...updates };
+        updateUserInfo(newUserData); 
+        localStorage.setItem('session', JSON.stringify(newUserData));
+        setFormData(prev => ({...prev, currentPassword: '', newPassword: '', confirmPassword: ''}));
+        showToast(t.alert_save_success, 'success');
+      }
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const confirmLogout = () => {
       localStorage.removeItem('session');
+      setUser(null);
       navigate('/auth');
-      // Reload để reset lại trạng thái của AppContext
-      window.location.reload(); 
-    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans text-slate-900 p-4 md:p-8 flex justify-center items-center">
+    <div className="min-h-screen bg-gray-50/50 font-sans text-gray-900 flex flex-col md:flex-row">
+      <Toast show={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({...toast, show: false})} />
       
-      <div className="max-w-6xl w-full bg-white rounded-[2rem] shadow-xl border border-gray-200 overflow-hidden flex flex-col md:flex-row min-h-[700px]">
-        
-        {/* --- CỘT TRÁI (SIDEBAR) --- */}
-        <div className="w-full md:w-1/3 bg-slate-900 text-white p-8 flex flex-col items-center relative overflow-hidden">
-             {/* Background trang trí */}
-             <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-                <div className="absolute top-[-50px] left-[-50px] w-64 h-64 bg-blue-500 rounded-full blur-3xl"></div>
-                <div className="absolute bottom-[-50px] right-[-50px] w-64 h-64 bg-purple-500 rounded-full blur-3xl"></div>
-             </div>
+      {showAvatarModal && (
+          <AvatarSelector 
+            currentAvatar={formData.avatar} 
+            onSelect={(url) => { setFormData({...formData, avatar: url}); setShowAvatarModal(false); }} 
+            onClose={() => setShowAvatarModal(false)}
+            t={t} // Truyền t vào Modal
+          />
+      )}
+      
+      {showLogoutModal && (
+          <LogoutModal onConfirm={confirmLogout} onCancel={() => setShowLogoutModal(false)} t={t} />
+      )}
 
-             <button onClick={() => navigate('/home')} className="self-start mb-8 flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-bold uppercase tracking-wider">
-                ← {t.back}
+      {/* SIDEBAR */}
+      <aside className="w-full md:w-72 bg-white border-r border-gray-100 fixed h-full z-20 hidden md:flex flex-col">
+         <div className="p-8 flex items-center gap-3 cursor-pointer group" onClick={() => navigate('/')}>
+             <div className="bg-black text-white w-10 h-10 rounded-xl flex items-center justify-center font-black text-2xl shadow-lg transition-transform group-hover:scale-105" style={{ fontFamily: "'Yuji Syuku', serif" }}>漢</div>
+             <h1 className="font-black text-3xl tracking-tighter text-slate-900 mt-1" style={{ fontFamily: "'Yuji Syuku', serif" }}>KAN</h1>
+         </div>
+
+         <nav className="flex-1 px-4 space-y-2 mt-4">
+             <button onClick={() => navigate('/')} className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl text-gray-500 font-bold hover:bg-gray-50 transition-all group">
+                <span className="text-xl group-hover:scale-110 transition-transform">🏠</span> {t.back}
              </button>
+             <button className="w-full flex items-center gap-4 px-6 py-4 rounded-2xl bg-black text-white font-bold shadow-xl shadow-gray-200">
+                <span className="text-xl">👤</span> {t.profile_title}
+             </button>
+         </nav>
+         <div className="p-6">
+             <button onClick={() => setShowLogoutModal(true)} className="w-full py-4 text-red-500 font-bold bg-red-50 hover:bg-red-500 hover:text-white rounded-2xl transition-all text-xs uppercase tracking-widest">
+                 {t.menu_logout}
+             </button>
+         </div>
+      </aside>
 
-             <div className="relative z-10 flex flex-col items-center text-center w-full">
-                <div className="w-36 h-36 rounded-full bg-yellow-400 border-4 border-slate-700 shadow-2xl flex items-center justify-center text-6xl mb-4 relative group cursor-pointer">
-                    🦊
-                    <div className="absolute inset-0 bg-black/30 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-xs font-bold text-white text-center px-2">
-                        {t.changePhoto}
+      {/* MAIN CONTENT */}
+      <main className="flex-1 md:ml-72 p-6 md:p-12 lg:p-16">
+        <div className="max-w-5xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-10 mb-12">
+                <div className="relative group cursor-pointer" onClick={() => setShowAvatarModal(true)}>
+                    <div className="w-40 h-40 rounded-[2.5rem] bg-gray-50 overflow-hidden shadow-2xl border-[6px] border-white ring-1 ring-gray-100">
+                        <img src={formData.avatar} alt="Avatar" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    </div>
+                    <div className="absolute -bottom-2 -right-2 bg-black text-white w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
+                        <span className="text-sm">✎</span>
                     </div>
                 </div>
-                
-                <h2 className="text-2xl font-black tracking-wide">{formData.fullName}</h2>
-                <p className="text-slate-400 text-sm font-medium mb-6">{formData.email}</p>
-
-                {/* Level Bar */}
-                <div className="w-full bg-slate-800 rounded-xl p-4 border border-slate-700 mb-6">
-                    <div className="flex justify-between text-xs font-bold text-slate-400 mb-2 uppercase tracking-wider">
-                        <span>{formData.level}</span>
-                        <span>{formData.exp}/{formData.maxExp} XP</span>
+                <div className="flex-1 text-center md:text-left space-y-5">
+                    <div>
+                        <h1 className="text-4xl font-black text-gray-900 tracking-tight uppercase">{formData.fullName || 'NO NAME'}</h1>
+                        <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-2">
+                            {/* ✅ SỬA: MEMBER -> t.member */}
+                            <span className="px-3 py-1 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest">{formData.level} {t.member || "MEMBER"}</span>
+                            <span className="px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-[10px] font-black uppercase tracking-widest">{user?.email}</span>
+                        </div>
                     </div>
-                    <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: `${(formData.exp / formData.maxExp) * 100}%` }}></div>
-                    </div>
-                </div>
-
-                <div className="w-full flex flex-col gap-2 mt-4">
-                    <div className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg text-sm font-bold text-slate-300">
-                        <span>📅</span> {t.joinDate}: {formData.joinDate}
-                    </div>
-                    <button onClick={handleLogout} className="mt-8 py-3 w-full border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white rounded-xl font-bold transition-all text-sm uppercase tracking-widest">
-                        {t.logout}
-                    </button>
-                </div>
-             </div>
-        </div>
-
-        {/* --- CỘT PHẢI (FORM NHẬP LIỆU) --- */}
-        <div className="w-full md:w-2/3 p-8 md:p-12 bg-white overflow-y-auto max-h-screen">
-            <h1 className="text-3xl font-black text-slate-800 mb-1" style={{ fontFamily: "'Yuji Syuku', serif" }}>{t.profile_title}</h1>
-            <p className="text-slate-500 text-sm mb-8">{t.profile_sub}</p>
-
-            <div className="mb-10">
-                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">{t.profile_basic}</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase">{t.label_name}</label>
-                        <input type="text" name="fullName" value={formData.fullName || ""} onChange={handleChangeInfo} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all font-medium text-slate-700"/>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase">{t.label_email}</label>
-                        <input type="email" name="email" value={formData.email || ""} onChange={handleChangeInfo} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all font-medium text-slate-700"/>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase">{t.label_phone}</label>
-                        <input type="tel" name="phone" value={formData.phone || ""} onChange={handleChangeInfo} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all font-medium text-slate-700"/>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase">{t.label_address}</label>
-                        <input type="text" name="address" value={formData.address || ""} onChange={handleChangeInfo} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all font-medium text-slate-700"/>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase">{t.label_country}</label>
-                        <select name="country" value={formData.country || "Vietnam"} onChange={handleChangeInfo} className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all font-medium text-slate-700 appearance-none cursor-pointer">
-                            <option value="Vietnam">Vietnam 🇻🇳</option>
-                            <option value="Japan">Japan 🇯🇵</option>
-                            <option value="China">China 🇨🇳</option>
-                            <option value="Korea">Korea 🇰🇷</option>
-                            <option value="USA">United States 🇺🇸</option>
-                            <option value="UK">United Kingdom 🇬🇧</option>
-                        </select>
-                    </div>
-
-                    {/* --- QUAN TRỌNG: Ô CHỌN NGÔN NGỮ KẾT NỐI GLOBAL STATE --- */}
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase text-blue-600">{t.label_lang}</label>
-                        <select name="language" value={formData.language || "vi"} onChange={handleChangeInfo} className="w-full p-3 bg-blue-50 border border-blue-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all font-bold text-slate-700 appearance-none cursor-pointer">
-                            <option value="vi">Tiếng Việt 🇻🇳</option>
-                            <option value="en">English (US) 🇺🇸</option>
-                            <option value="jp">日本語 (Japanese) 🇯🇵</option>
-                            <option value="cn">中文 (Chinese) 🇨🇳</option>
-                            <option value="kr">한국어 (Korean) 🇰🇷</option>
-                        </select>
+                    {/* Language Switcher */}
+                    <div className="inline-flex items-center p-1.5 bg-white rounded-full shadow-lg border border-gray-100">
+                        {LANGUAGES.map((lang) => {
+                            const isActive = language === lang.code;
+                            return (
+                                <button key={lang.code} type="button" onClick={() => handleLanguageChange(lang.code)} className={`flex items-center gap-2 px-6 py-3 rounded-full text-xs font-black transition-all duration-300 ${isActive ? 'bg-black text-white shadow-xl scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}>
+                                    <span className={isActive ? '' : 'opacity-80'}>{lang.code.toUpperCase()}</span>
+                                    {isActive && <span className="opacity-70 font-medium hidden lg:inline">{lang.label}</span>}
+                                </button>
+                            )
+                        })}
                     </div>
                 </div>
             </div>
 
-            <div className="mb-8">
-                <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">{t.security}</h3>
-                
-                <div className="grid grid-cols-1 gap-4 max-w-lg">
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold text-slate-700 uppercase">{t.labelCurrentPass}</label>
-                        <input type="password" placeholder="••••••••" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold text-slate-700 uppercase">{t.labelNewPass}</label>
-                            <input type="password" placeholder="••••••••" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all" />
+            {/* Form */}
+            <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+                <div className="lg:col-span-2 space-y-12">
+                    <div>
+                        <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-6 border-b pb-2">{t.profile_basic}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.label_name}</label>
+                                <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} className="w-full bg-white border-2 border-gray-100 focus:border-black focus:shadow-lg rounded-2xl px-5 py-4 font-bold text-gray-800 outline-none transition-all" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.label_email}</label>
+                                <div className="relative">
+                                    <input type="text" value={formData.email} disabled className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-4 font-bold text-gray-400 cursor-not-allowed" />
+                                    <span className="absolute right-5 top-4 text-lg opacity-30">🔒</span>
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.label_phone}</label>
+                                <input type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-white border-2 border-gray-100 focus:border-black focus:shadow-lg rounded-2xl px-5 py-4 font-bold text-gray-800 outline-none transition-all" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.label_dob}</label>
+                                <input type="date" value={formData.birthdate} onChange={e => setFormData({...formData, birthdate: e.target.value})} className="w-full bg-white border-2 border-gray-100 focus:border-black focus:shadow-lg rounded-2xl px-5 py-4 font-bold text-gray-800 outline-none transition-all" />
+                            </div>
+                            <div className="md:col-span-2 space-y-2">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.label_address}</label>
+                                <input type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full bg-white border-2 border-gray-100 focus:border-black focus:shadow-lg rounded-2xl px-5 py-4 font-bold text-gray-800 outline-none transition-all" />
+                            </div>
                         </div>
-                        <div className="flex flex-col gap-2">
-                            <label className="text-xs font-bold text-slate-700 uppercase">{t.labelConfirmPass}</label>
-                            <input type="password" placeholder="••••••••" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 transition-all" />
+                    </div>
+                    <div>
+                         {/* ✅ SỬA: MỤC TIÊU HỌC TẬP -> t.profile_goal */}
+                         <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-6 border-b pb-2">{t.profile_goal || "MỤC TIÊU"}</h3>
+                        <div className="space-y-6">
+                            <div className="flex gap-3">
+                                {['N5', 'N4', 'N3', 'N2', 'N1'].map((lvl) => (
+                                    <button key={lvl} type="button" onClick={() => setFormData({...formData, level: lvl})} className={`flex-1 py-3 rounded-xl font-black text-sm transition-all border-2 ${formData.level === lvl ? 'bg-black text-white border-black shadow-lg transform -translate-y-1' : 'bg-white text-gray-300 border-gray-100 hover:border-gray-300 hover:text-gray-500'}`}>
+                                            {lvl}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="space-y-2">
+                                {/* ✅ SỬA: BIO -> t.label_bio */}
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{t.label_bio || "BIO"}</label>
+                                <textarea value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} className="w-full bg-white border-2 border-gray-100 focus:border-black focus:shadow-lg rounded-2xl px-5 py-4 font-medium text-gray-800 outline-none transition-all h-32 resize-none"></textarea>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            {/* BUTTONS */}
-            <div className="flex items-center gap-4 border-t border-gray-100 pt-8">
-                <button 
-                    onClick={handleSave}
-                    className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all"
-                >
-                    {t.btn_save}
-                </button>
-                <button 
-                    onClick={() => navigate('/home')}
-                    className="px-6 py-3 bg-white text-slate-500 rounded-xl font-bold border border-gray-200 hover:bg-gray-50 transition-all"
-                >
-                    {t.btn_cancel}
-                </button>
-            </div>
-
+                <div className="space-y-10">
+                    <div>
+                        <h3 className="text-xs font-black text-red-500 uppercase tracking-widest mb-6 border-b border-red-100 pb-2">{t.profile_security}</h3>
+                        <div className="space-y-4">
+                            <input type="password" value={formData.currentPassword} onChange={e => setFormData({...formData, currentPassword: e.target.value})} placeholder={t.label_current_pass} className="w-full bg-white border-2 border-gray-100 focus:border-red-500 focus:bg-red-50 rounded-2xl px-5 py-4 font-bold text-gray-800 outline-none transition-all placeholder-gray-300 text-sm" />
+                            <input type="password" value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})} placeholder={t.label_new_pass} className="w-full bg-white border-2 border-gray-100 focus:border-red-500 focus:bg-red-50 rounded-2xl px-5 py-4 font-bold text-gray-800 outline-none transition-all placeholder-gray-300 text-sm" />
+                            <input type="password" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} placeholder={t.label_confirm_pass} className="w-full bg-white border-2 border-gray-100 focus:border-red-500 focus:bg-red-50 rounded-2xl px-5 py-4 font-bold text-gray-800 outline-none transition-all placeholder-gray-300 text-sm" />
+                        </div>
+                    </div>
+                    <div className="sticky top-10">
+                        <button type="submit" disabled={isLoading} className="w-full bg-black text-white py-4 rounded-2xl font-black text-lg shadow-xl shadow-gray-200 hover:bg-gray-900 hover:scale-[1.02] transition-all active:scale-95 disabled:opacity-70 flex items-center justify-center gap-3">
+                            {isLoading ? t.loading : t.btn_save}
+                        </button>
+                        <button type="button" onClick={() => window.location.reload()} className="w-full mt-4 text-gray-400 font-bold hover:text-gray-600 py-2 transition-all text-sm">
+                            {t.btn_cancel}
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
