@@ -3,38 +3,49 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar'; 
 import { useAppContext } from '../context/AppContext';
 import dictionaryData from '../utils/kanji-dictionary.json';
+// ✅ Import hàm lấy dữ liệu Kanji từ file bạn vừa tạo
 import { getKanjiList } from '../utils/kanjiData'; 
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { t, user } = useAppContext();
   
-  // 1. HIỆU ỨNG KANJI BAY (Chuẩn từ AuthPage)
+  // 1. HIỆU ỨNG KANJI BAY (SỬ DỤNG DATA THẬT)
   const [floatingChars, setFloatingChars] = useState([]);
   
   useEffect(() => {
-    // List chữ cái
-    const fullKanjiList = getKanjiList ? getKanjiList() : ["道", "夢", "愛", "旅", "心", "時", "空", "海", "山", "風", "林", "火"];
+    // ✅ GỌI HÀM LẤY DANH SÁCH 500 CHỮ
+    const fullKanjiList = getKanjiList(); 
     
-    // Cấu hình
-    const totalChars = 50; 
-    const lanes = 20; 
+    // Nếu lỡ file kia lỗi hoặc rỗng thì fallback về vài chữ cơ bản (An toàn)
+    const sourceList = (fullKanjiList && fullKanjiList.length > 0) 
+        ? fullKanjiList 
+        : ["道", "夢", "愛", "旅", "心"];
+
+    const totalChars = 75; // Số lượng chữ trên màn hình
+    const lanes = 30; 
     const slotWidth = 100 / lanes; 
 
     const chars = Array.from({ length: totalChars }).map((_, i) => {
       const currentLane = i % lanes;
-      const left = (currentLane * slotWidth) + (slotWidth / 2) + "%"; // Canh giữa làn
-      const duration = Math.random() * 20 + 25 + "s"; // Tốc độ vừa phải
-      const delay = -(Math.random() * 50) + "s";
-      const size = Math.random() * 2 + 1.5 + "rem"; 
-      const randomChar = fullKanjiList[Math.floor(Math.random() * fullKanjiList.length)];
+      // Random vị trí ngang trong làn
+      const left = (currentLane * slotWidth) + (Math.random() * slotWidth * 0.8) + "%";
+      
+      const duration = Math.random() * 20 + 25 + "s"; // Tốc độ bay
+      const delay = -(Math.random() * 50) + "s"; // Xuất hiện ngẫu nhiên
+      
+      // Random kích thước (chữ to chữ nhỏ)
+      const size = Math.random() * 2 + 1.2 + "rem"; 
+      
+      // ✅ Lấy ngẫu nhiên 1 chữ từ danh sách 500 chữ
+      const randomChar = sourceList[Math.floor(Math.random() * sourceList.length)];
       
       return { id: i, char: randomChar, left, duration, delay, size };
     });
     setFloatingChars(chars);
   }, []);
 
-  // 2. Random Kanji (Mỗi ngày 1 chữ)
+  // 2. Random Kanji cho thẻ "Hán tự hôm nay"
   const dailyKanji = useMemo(() => {
     if (!dictionaryData || dictionaryData.length === 0) return null;
     const today = new Date().getDate(); 
@@ -42,17 +53,16 @@ const HomePage = () => {
     return dictionaryData[index];
   }, []);
 
-  // 3. Random Câu Thơ (Mỗi lần F5 là đổi)
+  // 3. Random Câu Thơ
   const randomQuote = useMemo(() => {
-      // Nếu có danh sách quote thì random, không thì dùng câu mặc định
-      const quotes = t?.home_quotes || ["Tựa như lữ khách chốn nhân gian\nCứ mãi theo đuổi thứ lang bạt hư vô"];
+      const quotes = t?.home_quotes || ["Tựa như lữ khách chốn nhân gian\nCứ mãi theo đuổi chân trời tri thức"];
       return quotes[Math.floor(Math.random() * quotes.length)];
-  }, [t]); // Chạy lại khi đổi ngôn ngữ
+  }, [t]);
 
   return (
     <div className="flex h-screen bg-[#Fdfdfd] font-sans text-slate-900 overflow-hidden relative">
       
-      {/* --- BACKGROUND KANJI BAY --- */}
+      {/* --- BACKGROUND KANJI BAY (DỮ LIỆU TỪ KANJIDATA) --- */}
       <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none z-0">
          {floatingChars.map(item => (
              <span key={item.id} 
@@ -89,7 +99,6 @@ const HomePage = () => {
                             {t?.home_welcome || "Xin chào, Lữ khách!"}
                         </h1>
                         <div className="relative pl-6 border-l-4 border-gray-200">
-                            {/* HIỂN THỊ CÂU THƠ RANDOM */}
                             <p className="text-xl text-gray-600 font-medium whitespace-pre-wrap leading-relaxed animate-fade-in">
                                 "{randomQuote}"
                             </p>
@@ -138,9 +147,8 @@ const HomePage = () => {
                         </div>
                     </div>
                 )}
-                <div className="bg-gray-50/80 backdrop-blur-md p-6 rounded-[2.5rem] border border-gray-100 flex items-center justify-between">
+                <div className="bg-gray-50/80 backdrop-blur-sm p-6 rounded-[2.5rem] border border-gray-100 flex items-center justify-between">
                     <div>
-                        {/* Cập nhật nhãn mới: CHUỖI RÈN LUYỆN */}
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t?.home_streak || "CHUỖI RÈN LUYỆN"}</p>
                         <p className="text-2xl font-black text-slate-800 mt-1">🔥 3 Ngày</p>
                     </div>
@@ -150,13 +158,13 @@ const HomePage = () => {
          </div>
       </main>
 
-      {/* --- CSS: FONT MỀM MẠI + BAY TUỐT LÊN CAO --- */}
+      {/* --- CSS HIỆU ỨNG (FONT + BAY) --- */}
       <style>{`
         @keyframes floatUp {
             0% { transform: translateY(100vh); opacity: 0; }
             5% { opacity: 0.06; }
             95% { opacity: 0.06; }
-            100% { transform: translateY(-150vh); opacity: 0; } /* Bay quá đỉnh màn hình */
+            100% { transform: translateY(-150vh); opacity: 0; }
         }
         .kanji-float {
             position: absolute;
