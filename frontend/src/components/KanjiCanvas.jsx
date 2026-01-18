@@ -15,7 +15,7 @@ const KanjiCanvas = forwardRef((props, ref) => {
     
     // Resize canvas
     const rect = container.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = window.devicePixelRatio || 1; 
     
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
