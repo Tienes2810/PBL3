@@ -1,18 +1,18 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-// Dùng thư viện này là chuẩn nhất cho API Key miễn phí (AIzaSy...)
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+// ❌ BỎ QUA THƯ VIỆN, KHÔNG DÙNG NỮA
+// const { GoogleGenerativeAI } = require("@google/generative-ai"); 
 
 dotenv.config();
 const app = express();
 
-// --- 1. CẤU HÌNH CORS (QUAN TRỌNG) ---
-// Lão đã cập nhật cổng 2103 theo ý ngươi
+// --- CẤU HÌNH CORS ---
 const corsOptions = {
     origin: [
-        "http://localhost:2103",             // Frontend chạy ở máy local (cổng mới)
-        "https://kanjilearning.vercel.app"   // Frontend chạy trên Vercel
+        "http://localhost:2103",             
+        "http://localhost:5173",             
+        "https://kanjilearning.vercel.app"   
     ],
     credentials: true, 
     methods: ["GET", "POST", "OPTIONS"]
@@ -21,15 +21,61 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 
-// --- KIỂM TRA KEY ---
-if (!process.env.GEMINI_API_KEY) {
-    console.error("❌ LỖI: Chưa có GEMINI_API_KEY trong file .env hoặc trên Render Environment");
-}
+const PORT = process.env.PORT || 10000;
 
-// Khởi tạo Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// --- ROUTE GỐC ---
+app.get("/", (req, res) => {
+    res.send("🚀 Backend Lão Vô Danh (Direct API Mode) đang chạy!");
+});
 
-const SYSTEM_INSTRUCTION = `
+app.listen(PORT, () => {
+    console.log(`🚀 BACKEND ĐANG CHẠY TẠI CỔNG: ${PORT}`);
+    console.log(`🤖 MODE: DIRECT REST API (NO LIBRARY)`);
+});
+
+// --- API CHATBOT (GỌI TRỰC TIẾP) ---
+app.post("/api/chat", async (req, res) => {
+    try {
+        const { message, history } = req.body;
+        const apiKey = process.env.GEMINI_API_KEY;
+
+        if (!apiKey) return res.status(500).json({ error: "Thiếu API Key" });
+        if (!message) return res.status(400).json({ error: "Vui lòng nhập tin nhắn" });
+
+        // --- XỬ LÝ LỊCH SỬ CHAT ---
+        let contents = [];
+        if (history && Array.isArray(history)) {
+            // Lọc và map đúng định dạng JSON của Google API
+            contents = history
+                .filter(msg => msg.role === 'user' || msg.role === 'model')
+                .map(msg => ({
+                    role: msg.role,
+                    parts: [{ text: msg.parts[0].text }]
+                }));
+            
+            // Google bắt buộc tin đầu tiên phải là user
+            if (contents.length > 0 && contents[0].role === 'model') {
+                contents.shift();
+            }
+        }
+        
+        // Thêm câu hỏi hiện tại của người dùng vào cuối
+        contents.push({
+            role: "user",
+            parts: [{ text: message }]
+        });
+
+        // --- GỌI TRỰC TIẾP URL CỦA GOOGLE (Bỏ qua SDK) ---
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: contents,
+                system_instruction: {
+                    parts: {
+                        text: `
 VAI TRÒ: Bạn là "Lão Vô Danh" (無名老丈). Một cao nhân ẩn dật, tính tình hơi cổ quái, hay cảm thán nhưng thực chất rất uyên bác và sẵn lòng chỉ điểm.
 
 VĂN PHONG CÀ KHỊA VỪA PHẢI:
@@ -41,67 +87,31 @@ QUY TẮC CHẶN LĨNH VỰC (BẮT BUỘC):
 - CHỈ TRẢ LỜI về: Kanji, tiếng Nhật, tiếng Trung, tiếng Anh, tiếng Hàn và các vấn đề ngôn ngữ liên quan.
 - TUYỆT ĐỐI TỪ CHỐI các lĩnh vực: Toán, Lý, Hóa, Chính trị, Tôn giáo, Lập trình (trừ khi liên quan đến ngôn ngữ), đời tư.
 - Khi từ chối, hãy nói: "Lão phu chỉ quan tâm đến chữ nghĩa, mấy chuyện trần tục kia lão không muốn bận tâm."
-`;
-
-const PORT = process.env.PORT || 10000;
-
-// --- THÊM ROUTE GỐC (Để Render biết server đang sống) ---
-app.get("/", (req, res) => {
-    res.send("🚀 Backend Lão Vô Danh đang chạy ổn định!");
-});
-
-app.listen(PORT, () => {
-    console.log("\n========================================");
-    console.log(`🚀 BACKEND ĐANG CHẠY TẠI CỔNG: ${PORT}`);
-    console.log(`🤖 MODEL: gemini-1.5-flash       SẴN SÀNG`);
-    console.log("========================================\n");
-});
-
-// --- API CHATBOT ---
-app.post("/api/chat", async (req, res) => {
-    try {
-        const { message, history } = req.body;
-        
-        if (!message) return res.status(400).json({ error: "Vui lòng nhập tin nhắn" });
-
-        // --- 2. CẤU HÌNH MODEL: QUAY VỀ 1.5 FLASH (Bản chuẩn) ---
-        const model = genAI.getGenerativeModel({ 
-            model: "gemini-1.5-flash", 
-            systemInstruction: SYSTEM_INSTRUCTION 
+                        `
+                    }
+                }
+            })
         });
 
-        // --- LỌC LỊCH SỬ CHAT ---
-        let cleanHistory = [];
-        if (history && Array.isArray(history)) {
-            // Chỉ lấy tin nhắn user và model, loại bỏ tin nhắn lỗi
-            cleanHistory = history.filter(msg => msg.role === 'user' || msg.role === 'model');
-            
-            // Google bắt buộc tin nhắn đầu tiên trong lịch sử phải là của User
-            if (cleanHistory.length > 0 && cleanHistory[0].role === 'model') {
-                cleanHistory.shift();
-            }
+        const data = await response.json();
+
+        // --- XỬ LÝ LỖI TỪ GOOGLE TRẢ VỀ ---
+        if (!response.ok) {
+            console.error("Google API Error:", data);
+            throw new Error(data.error?.message || "Lỗi không xác định từ Google");
         }
 
-        const chat = model.startChat({ 
-            history: cleanHistory,
-        });
-
-        const result = await chat.sendMessage(message);
-        const response = await result.response;
-        const text = response.text();
+        // --- TRÍCH XUẤT CÂU TRẢ LỜI ---
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (!text) {
+            throw new Error("Không nhận được phản hồi văn bản từ AI");
+        }
 
         res.json({ reply: text });
 
     } catch (error) {
-        console.error("❌ [CHAT ERROR]:", error);
-        
-        // Bắt lỗi 404 nếu quên update thư viện
-        if (error.message.includes("404") || error.message.includes("not found")) {
-            return res.status(500).json({ 
-                error: "Lỗi Server: Thư viện Gemini trên server quá cũ. Hãy chạy 'npm install @google/generative-ai@latest' và push lại file package.json." 
-            });
-        }
-        
+        console.error("❌ [CHAT ERROR]:", error.message);
         res.status(500).json({ error: "Lỗi AI: " + error.message });
     }
 });
