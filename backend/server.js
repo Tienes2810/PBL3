@@ -6,14 +6,26 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 dotenv.config();
 const app = express();
 
-app.use(cors({ origin: "*" }));
+// --- 1. CẤU HÌNH CORS (QUAN TRỌNG) ---
+// Cho phép cả Localhost (để bạn test) và Vercel (để chạy thật)
+const corsOptions = {
+    origin: [
+        "http://localhost:2103",             // Frontend chạy ở máy bạn
+        "https://kanjilearning.vercel.app"   // Frontend chạy trên Vercel
+    ],
+    credentials: true, // Cho phép gửi cookie/header xác thực nếu cần
+    methods: ["GET", "POST", "OPTIONS"]
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "10mb" }));
 
 // --- KIỂM TRA KEY ---
 if (!process.env.GEMINI_API_KEY) {
-    console.error("❌ LỖI: Chưa có GEMINI_API_KEY trong file .env");
+    console.error("❌ LỖI: Chưa có GEMINI_API_KEY trong file .env hoặc trên Render Environment");
 }
 
+// Khởi tạo Gemini (Lưu ý: Phải dùng thư viện mới nhất)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const SYSTEM_INSTRUCTION = `
@@ -32,10 +44,15 @@ QUY TẮC CHẶN LĨNH VỰC (BẮT BUỘC):
 
 const PORT = process.env.PORT || 10000;
 
+// --- THÊM ROUTE GỐC (Để Render biết server đang sống) ---
+app.get("/", (req, res) => {
+    res.send("🚀 Backend Lão Vô Danh đang chạy ổn định!");
+});
+
 app.listen(PORT, () => {
     console.log("\n========================================");
     console.log(`🚀 BACKEND ĐANG CHẠY TẠI CỔNG: ${PORT}`);
-    console.log(`🤖 MODEL: gemini-2.5-flash      SẴN SÀNG`);
+    console.log(`🤖 MODEL: gemini-1.5-flash       SẴN SÀNG`);
     console.log("========================================\n");
 });
 
@@ -46,10 +63,11 @@ app.post("/api/chat", async (req, res) => {
         
         if (!message) return res.status(400).json({ error: "Vui lòng nhập tin nhắn" });
 
-        // --- CẤU HÌNH MODEL: DÙNG 'gemini-2.5-flash' ---
-        // Đây là bản chuẩn hiện tại, thay thế cho 1.5 đã cũ.
+        // --- 2. CẤU HÌNH MODEL: QUAY VỀ 1.5 FLASH ---
+        // Lý do: Bản 2.5 Flash giới hạn 20 req/ngày (quá ít). 
+        // Bản 1.5 Flash giới hạn 1500 req/ngày (thoải mái dev).
         const model = genAI.getGenerativeModel({ 
-            model: "gemini-2.5-flash", 
+            model: "gemini-1.5-flash", 
             systemInstruction: SYSTEM_INSTRUCTION 
         });
 
@@ -59,7 +77,7 @@ app.post("/api/chat", async (req, res) => {
             // Lọc chỉ lấy tin nhắn user và model hợp lệ
             cleanHistory = history.filter(msg => msg.role === 'user' || msg.role === 'model');
             
-            // Xóa tin nhắn đầu tiên nếu nó là của model (do Google bắt buộc tin đầu phải là User)
+            // Xóa tin nhắn đầu tiên nếu nó là của model (Google bắt buộc tin đầu phải là User)
             if (cleanHistory.length > 0 && cleanHistory[0].role === 'model') {
                 cleanHistory.shift();
             }
@@ -77,7 +95,7 @@ app.post("/api/chat", async (req, res) => {
 
     } catch (error) {
         console.error("❌ [CHAT ERROR]:", error);
-        // Trả về lỗi chi tiết
+        // Trả về lỗi chi tiết để dễ debug trên Frontend
         res.status(500).json({ error: "Lỗi AI: " + error.message });
     }
 });
