@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as wanakana from 'wanakana'; // Đảm bảo đã npm install wanakana
+import * as wanakana from 'wanakana'; 
+import { supabase } from '../supabaseClient'; 
 import kanjiBase from '../utils/kanji-base.json';
 import jukugoBase from '../utils/jukugo-data.json';
 
@@ -11,81 +12,135 @@ const TOTAL_LESSONS = 32;
 const ChallengePage = () => {
   const navigate = useNavigate();
   
-  // State
+  // --- STATE ---
+  const [currentUser, setCurrentUser] = useState(null); 
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [completedLessons, setCompletedLessons] = useState([]);
+  const [completedLessons, setCompletedLessons] = useState([]); 
   
-  // Settings
-  const [settings, setSettings] = useState({
-    checkMeaning: true,
-    checkReading: true,
-    enableWriting: true,
-    timeMode: 'normal'
-  });
-
-  // State quản lý số câu hỏi
+  // Settings & Game State
+  const [settings, setSettings] = useState({ checkMeaning: true, checkReading: true, enableWriting: true, timeMode: 'normal' });
   const [questionCount, setQuestionCount] = useState(30); 
   const [maxAvailableQuestions, setMaxAvailableQuestions] = useState(30); 
-
-  // Game State
   const [questions, setQuestions] = useState([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [score, setScore] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   
-  // Answer State
+  // Answer & Timer State
   const [selectedAns, setSelectedAns] = useState(null); 
   const [wrongIndex, setWrongIndex] = useState(null);   
   const [inputValue, setInputValue] = useState("");     
   const [inputStatus, setInputStatus] = useState(null); 
-
-  // Timer
   const [timeLeft, setTimeLeft] = useState(0);
   const [maxTime, setMaxTime] = useState(0);
   const timerRef = useRef(null);
   const inputRef = useRef(null); 
 
-  // --- STYLE ---
+  // Style CSS
   const customStyles = `
-    @font-face {
-      font-family: 'DFKai-SB';
-      src: url('/fonts/dfkai-sb.ttf') format('truetype');
-    }
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-15px); }
-      75% { transform: translateX(15px); }
-    }
+    @font-face { font-family: 'DFKai-SB'; src: url('/fonts/dfkai-sb.ttf') format('truetype'); }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-15px); } 75% { transform: translateX(15px); } }
     .animate-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
-    
     input[type=range] { -webkit-appearance: none; background: transparent; }
-    input[type=range]::-webkit-slider-thumb {
-      -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%;
-      background: black; cursor: pointer; margin-top: -10px; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    }
-    input[type=range]::-webkit-slider-runnable-track {
-      width: 100%; height: 6px; cursor: pointer; background: #e2e8f0; border-radius: 99px;
-    }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 24px; width: 24px; border-radius: 50%; background: black; cursor: pointer; margin-top: -10px; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+    input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: #e2e8f0; border-radius: 99px; }
   `;
 
-  // --- EFFECT: Load/Save Progress ---
+  // --- 🔥 1. LOAD USER & TIẾN ĐỘ TỪ SUPABASE 🔥 ---
   useEffect(() => {
-    const savedProgress = localStorage.getItem('kanji_completed_lessons');
-    if (savedProgress) setCompletedLessons(JSON.parse(savedProgress));
+    const fetchUserData = async () => {
+        // 👇 QUAN TRỌNG: LẤY ĐÚNG KEY 'session' TRONG LOCAL STORAGE 👇
+        const storedJson = localStorage.getItem('session');
+        
+        if (storedJson) {
+            try {
+                const userObj = JSON.parse(storedJson);
+                setCurrentUser(userObj); 
+                console.log(">> [DEBUG] User đã đăng nhập. ID:", userObj.id);
+
+                // Lấy tiến độ từ Supabase
+                const { data, error } = await supabase
+                    .from('challenge_progress')
+                    .select('lesson_id')
+                    .eq('user_id', userObj.id); 
+
+                if (!error && data) {
+                    console.log(">> [DEBUG] Tiến độ tải về:", data);
+                    const finishedList = data.map(row => row.lesson_id);
+                    setCompletedLessons(finishedList);
+                } else {
+                    console.error(">> [ERROR] Lỗi tải tiến độ:", error);
+                }
+            } catch (e) {
+                console.error(">> [ERROR] User trong LocalStorage bị lỗi JSON:", e);
+            }
+        } else {
+            console.warn(">> [WARN] Không tìm thấy key 'session' trong LocalStorage. Hãy đăng nhập lại!");
+        }
+    };
+    fetchUserData();
   }, []);
 
+  // --- 🔥 2. LƯU ĐIỂM (QUAN TRỌNG NHẤT) 🔥 ---
   useEffect(() => {
-    if (isFinished && score > 0 && selectedLesson) {
-        if (!completedLessons.includes(selectedLesson)) {
-            const newCompleted = [...completedLessons, selectedLesson];
-            setCompletedLessons(newCompleted);
-            localStorage.setItem('kanji_completed_lessons', JSON.stringify(newCompleted));
-        }
-    }
-  }, [isFinished, score, selectedLesson, completedLessons]);
+    const saveToSupabase = async () => {
+        // Điều kiện để lưu: Đã xong game + Có điểm + Đã chọn bài + Đã đăng nhập
+        if (isFinished && score > 0 && selectedLesson && currentUser) {
+            console.log(">> [DEBUG] Đang chuẩn bị lưu điểm...");
+            console.log("   - User ID:", currentUser.id);
+            console.log("   - Lesson ID:", selectedLesson);
+            console.log("   - Score:", score);
 
-  // --- EFFECT: Tính Max Questions ---
+            // Cập nhật UI ngay lập tức
+            if (!completedLessons.includes(selectedLesson)) {
+                setCompletedLessons(prev => [...prev, selectedLesson]);
+            }
+
+            try {
+                // Kiểm tra điểm cũ
+                const { data: existingData } = await supabase
+                    .from('challenge_progress')
+                    .select('score')
+                    .eq('user_id', currentUser.id) 
+                    .eq('lesson_id', selectedLesson)
+                    .maybeSingle();
+
+                // Logic: Lưu nếu chưa có điểm HOẶC điểm mới cao hơn
+                if (!existingData || score > existingData.score) {
+                    console.log(">> [DEBUG] Đang gửi lệnh UPSERT lên Supabase...");
+                    
+                    const { error } = await supabase
+                        .from('challenge_progress')
+                        .upsert({ 
+                            user_id: currentUser.id, 
+                            lesson_id: selectedLesson,
+                            score: score,
+                            completed_at: new Date().toISOString()
+                        }, { onConflict: 'user_id, lesson_id' });
+
+                    if (error) {
+                        console.error(">> [ERROR] Lỗi Supabase:", error);
+                        alert(`Lỗi lưu điểm: ${error.message}`);
+                    } else {
+                        console.log(">> [SUCCESS] ✅ Đã lưu thành công!");
+                    }
+                } else {
+                    console.log(">> [INFO] Điểm thấp hơn kỷ lục cũ, không lưu.");
+                }
+            } catch (err) {
+                console.error(">> [ERROR] Lỗi hệ thống:", err);
+            }
+        }
+    };
+
+    saveToSupabase();
+  }, [isFinished, score, selectedLesson, currentUser]);
+
+
+  // --- (CÁC PHẦN LOGIC GAME BÊN DƯỚI GIỮ NGUYÊN) ---
+  
+  // --- LOGIC TÍNH TOÁN MAX CÂU HỎI ---
   useEffect(() => {
     if (!selectedLesson) return;
     const startIndex = (selectedLesson - 1) * ITEMS_PER_LESSON;
@@ -104,9 +159,7 @@ const ChallengePage = () => {
     if (questionCount < 16 && maxQ >= 16) setQuestionCount(16);
   }, [selectedLesson, settings.checkMeaning, settings.checkReading]);
 
-
-  // --- LOGIC GAME ---
-
+  // --- HELPER LOGIC ---
   const parseReadings = (item) => {
     let readings = [];
     if (item.kunyomi && item.kunyomi !== "-") {
@@ -331,12 +384,14 @@ const ChallengePage = () => {
     <div className="h-screen w-screen bg-[#f8f9fa] flex flex-col font-sans overflow-hidden relative select-none">
       <style>{customStyles}</style>
 
-      {/* 1. MENU */}
+      {/* 1. MENU CHỌN BÀI */}
       {!selectedLesson ? (
         <div className="flex-1 overflow-y-auto p-8 flex flex-col items-center">
              <div className="w-full max-w-7xl">
                 <button onClick={() => navigate('/')} className="mb-6 flex items-center gap-2 text-gray-500 hover:text-black font-black transition-colors text-lg uppercase"><span>⬅</span> Trang chủ</button>
                 <h1 className="text-6xl font-black text-slate-800 mb-10 uppercase">ĐẤU TRƯỜNG KANJI</h1>
+                
+                {/* Lưới Level */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 pb-10">
                 {Array.from({ length: TOTAL_LESSONS }, (_, i) => i + 1).map((num) => {
                     const isDone = completedLessons.includes(num); 
@@ -352,7 +407,6 @@ const ChallengePage = () => {
              </div>
         </div>
       ) : !isPlaying ? (
-        
         // 2. LOBBY
         <div className="flex-1 flex items-center justify-center animate-fade-in-up p-4">
             <div className="bg-white p-8 md:p-10 rounded-[3rem] shadow-2xl w-full max-w-2xl border border-gray-100 relative">
@@ -425,9 +479,6 @@ const ChallengePage = () => {
 
           {!isFinished && questions.length > 0 ? (
             <div className="flex-1 flex flex-col justify-center gap-6">
-               {/* 🔥 CẬP NHẬT 1: TĂNG KÍCH THƯỚC KHỐI CÂU HỎI 
-                  (Giảm padding dọc để nhường chỗ cho ô Input)
-               */}
                <div className="flex-1 flex flex-col items-center justify-center bg-white rounded-[3rem] shadow-xl border-2 border-gray-50 relative p-4">
                   <div className="absolute top-0 left-0 w-full h-2 bg-gray-100"><div className="h-full bg-green-500 transition-all" style={{ width: `${((currentQ)/questions.length)*100}%` }}></div></div>
                   <span className="mb-2 px-4 py-1 bg-gray-100 rounded-full text-xs font-black text-gray-400 uppercase tracking-widest">Câu {currentQ + 1} / {questions.length}</span>
@@ -435,18 +486,9 @@ const ChallengePage = () => {
                   <div className={`px-6 py-2 rounded-2xl font-black text-lg uppercase tracking-widest border-2 shadow-sm ${questions[currentQ].type.includes('writing') ? 'bg-purple-50 text-purple-600 border-purple-100' : questions[currentQ].hint.includes('NGHĨA') ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>{questions[currentQ].hint}</div>
                </div>
                
-               {/* 🔥 CẬP NHẬT 2: TĂNG KHÔNG GIAN CHO KHU VỰC TRẢ LỜI 
-                  (h-56 md:h-72: Cao hơn hẳn so với h-44 cũ)
-               */}
                <div className="h-56 md:h-72">
                  {questions[currentQ].type.includes('writing') ? (
                    <form onSubmit={handleWritingSubmit} className="h-full flex flex-col gap-4 animate-fade-in-up max-w-3xl mx-auto w-full">
-                      
-                      {/* 🔥 CẬP NHẬT 3: Ô INPUT TO HƠN
-                         - py-4: Padding dọc lớn
-                         - text-4xl: Chữ to
-                         - leading-loose: Dãn dòng để dấu tiếng Việt đẹp
-                      */}
                       <input 
                           ref={inputRef} 
                           type="text" 
@@ -456,7 +498,6 @@ const ChallengePage = () => {
                           placeholder={questions[currentQ].type === 'writing_reading' ? "Nhập Hiragana hoặc Romaji..." : "Nhập nghĩa hoặc Hán Việt..."} 
                           className={`w-full flex-1 text-center text-4xl md:text-5xl font-bold rounded-[2rem] border-4 outline-none transition-all placeholder:text-gray-300 placeholder:text-2xl placeholder:font-normal leading-loose py-4 ${inputStatus === 'correct' ? 'border-green-500 bg-green-50 text-green-700' : inputStatus === 'wrong' ? 'border-red-500 bg-red-50 text-red-700 animate-shake' : 'border-gray-200 focus:border-indigo-500 text-slate-800 focus:bg-white'}`} 
                       />
-                      
                       {inputStatus === 'wrong' ? (
                           <div className="h-20 flex flex-col items-center justify-center bg-red-50 rounded-2xl border-2 border-red-200 text-red-600 font-bold animate-pulse px-4">
                               <span className="text-[10px] uppercase opacity-70">ĐÁP ÁN ĐÚNG:</span>
