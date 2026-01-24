@@ -60,7 +60,13 @@ const Sidebar = () => {
             <span>{t?.menu_flashcard || "Flashcard"}</span>
         </div>
 
-        {/* ✅ MỤC THẾ GIỚI (CÓ THÔNG BÁO) */}
+        {/* 🔥 MỤC THỬ THÁCH (MỚI THÊM VÀO ĐÂY) 🔥 */}
+        <div onClick={() => navigate('/challenge')} className={getLinkClass('/challenge')}>
+            <span className="text-xl w-6 text-center">⚔️</span> 
+            <span>Thử thách</span>
+        </div>
+
+        {/* ✅ MỤC THẾ GIỚI (CÓ THÔNG BÁO) - ĐÃ BỊ ĐẨY XUỐNG DƯỚI */}
         <div onClick={() => navigate('/world')} className={getLinkClass('/world')}>
             <span className="text-xl w-6 text-center">🌍</span> 
             <span>Thế Giới</span>
