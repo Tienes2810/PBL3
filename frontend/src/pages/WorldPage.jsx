@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
-import { useAppContext } from '../context/AppContext'; // Import Context
+import { useAppContext } from '../context/AppContext'; 
 import { supabase } from '../supabaseClient';
 import FriendSystem from './FriendSystem';
-import ForumTab from '../components/ForumTab'; // Component Diễn Đàn
-import MessageSystem from './MessageSystem'; // Component Tin Nhắn
+import ForumTab from '../components/ForumTab'; 
+import MessageSystem from './MessageSystem'; 
 
-// 1. CẤU HÌNH (Giữ nguyên)
+// 1. CẤU HÌNH
 const COUNTRY_MAP = { 'VN': 'Việt Nam', 'JP': '日本', 'KR': '한국', 'CN': '中国', 'US': 'USA', 'GB': 'UK', 'FR': 'France', 'DE': 'Deutschland', 'RU': 'Россия', 'TH': 'ประเทศไทย', 'OT': 'Earth' };
 const RANK_TIERS = [
     { limit: 1, title: "THẦN NGỮ CHI VƯƠNG 👑", bg: "bg-yellow-950", text: "text-yellow-200", border: "border-yellow-500", glow: "shadow-yellow-500/50" },
@@ -18,7 +18,6 @@ const RANK_TIERS = [
     { limit: 9999, title: "NGƯỜI MỚI NHẬP MÔN 🌱", bg: "bg-gray-100", text: "text-gray-500", border: "border-gray-200", glow: "shadow-none" }
 ];
 
-// 2. COMPONENT LEVEL BADGE
 const LevelBadge = ({ level }) => {
     let style = "bg-gray-100 text-gray-500 border-gray-200";
     const l = level ? level.toUpperCase() : "N5";
@@ -29,71 +28,29 @@ const LevelBadge = ({ level }) => {
     return <span className={`px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest border ${style} inline-block min-w-[50px] text-center`}>{l}</span>;
 };
 
-// 🔥 3. COMPONENT LỬA 🔥
 const RealFireAura = ({ rank, children }) => {
     if (rank > 3) return <div className="relative">{children}</div>;
-
-    const fireStyle = rank === 1 
-        ? { main: '#fbbf24', core: '#fffbeb', base: '#b45309' } // Vàng
-        : rank === 2 
-        ? { main: '#f97316', core: '#fff7ed', base: '#9a3412' } // Cam
-        : { main: '#22d3ee', core: '#ecfeff', base: '#1e3a8a' }; // Xanh
-
+    const fireStyle = rank === 1 ? { main: '#fbbf24', core: '#fffbeb', base: '#b45309' } : rank === 2 ? { main: '#f97316', core: '#fff7ed', base: '#9a3412' } : { main: '#22d3ee', core: '#ecfeff', base: '#1e3a8a' }; 
     return (
         <div className="relative flex items-center justify-center p-2 group">
-            <div className="absolute inset-0 -top-3 w-[120%] h-[130%] left-[-10%] animate-fire-wave opacity-80 z-0 mix-blend-screen"
-                 style={{
-                     background: `linear-gradient(to top, ${fireStyle.base}, ${fireStyle.main}, transparent)`,
-                     clipPath: 'polygon(50% 0%, 70% 20%, 85% 10%, 95% 40%, 100% 70%, 85% 90%, 50% 100%, 15% 90%, 0% 70%, 5% 40%, 15% 10%, 30% 20%)',
-                     filter: 'blur(5px)'
-                 }}>
-            </div>
-            
-            <div className="absolute inset-0 -top-2 w-[100%] h-[120%] animate-fire-wave-fast opacity-90 z-0 mix-blend-screen"
-                 style={{
-                     background: `linear-gradient(to top, ${fireStyle.main}, ${fireStyle.core}, transparent)`,
-                     clipPath: 'polygon(50% 0%, 60% 30%, 80% 20%, 90% 50%, 95% 80%, 50% 100%, 5% 80%, 10% 50%, 20% 20%, 40% 30%)',
-                     filter: 'blur(2px)'
-                 }}>
-            </div>
-
-            <div className={`relative z-10 p-[2px] rounded-full bg-white ring-2 ring-white/60 shadow-lg overflow-hidden`}>
-                {children}
-            </div>
+            <div className="absolute inset-0 -top-3 w-[120%] h-[130%] left-[-10%] animate-fire-wave opacity-80 z-0 mix-blend-screen" style={{ background: `linear-gradient(to top, ${fireStyle.base}, ${fireStyle.main}, transparent)`, clipPath: 'polygon(50% 0%, 70% 20%, 85% 10%, 95% 40%, 100% 70%, 85% 90%, 50% 100%, 15% 90%, 0% 70%, 5% 40%, 15% 10%, 30% 20%)', filter: 'blur(5px)' }}></div>
+            <div className="absolute inset-0 -top-2 w-[100%] h-[120%] animate-fire-wave-fast opacity-90 z-0 mix-blend-screen" style={{ background: `linear-gradient(to top, ${fireStyle.main}, ${fireStyle.core}, transparent)`, clipPath: 'polygon(50% 0%, 60% 30%, 80% 20%, 90% 50%, 95% 80%, 50% 100%, 5% 80%, 10% 50%, 20% 20%, 40% 30%)', filter: 'blur(2px)' }}></div>
+            <div className={`relative z-10 p-[2px] rounded-full bg-white ring-2 ring-white/60 shadow-lg overflow-hidden`}>{children}</div>
         </div>
     );
 };
 
-// 🐉 4. COMPONENT RANK ICON 🐉
 const RankBadge = ({ index }) => {
     const rank = index + 1;
-    if (rank === 1) return (
-        <div className="relative w-24 h-24 flex items-center justify-center -my-6 transition-transform hover:scale-110 drop-shadow-xl">
-            <img src="https://cdn-icons-png.flaticon.com/128/2877/2877189.png" alt="Dragon" className="w-full h-full object-contain filter drop-shadow-md" />
-            <div className="absolute -bottom-1 w-7 h-7 bg-yellow-600 text-white rounded-full flex items-center justify-center font-black border-2 border-yellow-300 shadow-md text-sm z-20">1</div>
-        </div>
-    );
-    if (rank === 2) return (
-        <div className="relative w-20 h-20 flex items-center justify-center -my-5 transition-transform hover:scale-110 drop-shadow-lg">
-            <img src="https://cdn-icons-png.flaticon.com/128/16780/16780898.png" alt="Phoenix" className="w-full h-full object-contain filter drop-shadow-md" />
-            <div className="absolute -bottom-1 w-6 h-6 bg-orange-600 text-white rounded-full flex items-center justify-center font-black border-2 border-orange-300 shadow-md text-xs z-20">2</div>
-        </div>
-    );
-    if (rank === 3) return (
-        <div className="relative w-16 h-16 flex items-center justify-center -my-4 transition-transform hover:scale-110 drop-shadow-md">
-            <img src="https://cdn-icons-png.flaticon.com/128/13640/13640322.png" alt="Tiger" className="w-full h-full object-contain filter drop-shadow-md" />
-            <div className="absolute -bottom-1 w-5 h-5 bg-slate-600 text-white rounded-full flex items-center justify-center font-black border-2 border-slate-300 shadow-md text-[10px] z-20">3</div>
-        </div>
-    );
-    if (rank <= 10) return <div className="w-8 h-8 rounded-lg bg-slate-800 text-white flex items-center justify-center font-black text-sm border-b-4 border-slate-600 shadow-md">{rank}</div>;
-    return <div className="text-gray-400 font-bold text-sm">#{rank}</div>;
+    if (rank === 1) return <div className="relative w-24 h-24 flex items-center justify-center -my-6 hover:scale-110 transition-transform"><img src="https://cdn-icons-png.flaticon.com/128/2877/2877189.png" className="w-full h-full object-contain filter drop-shadow-md" /><div className="absolute -bottom-1 w-7 h-7 bg-yellow-600 text-white rounded-full flex items-center justify-center font-black border-2 border-yellow-300 shadow-md text-sm z-20">1</div></div>;
+    if (rank === 2) return <div className="relative w-20 h-20 flex items-center justify-center -my-5 hover:scale-110 transition-transform"><img src="https://cdn-icons-png.flaticon.com/128/16780/16780898.png" className="w-full h-full object-contain filter drop-shadow-md" /><div className="absolute -bottom-1 w-6 h-6 bg-orange-600 text-white rounded-full flex items-center justify-center font-black border-2 border-orange-300 shadow-md text-xs z-20">2</div></div>;
+    if (rank === 3) return <div className="relative w-16 h-16 flex items-center justify-center -my-4 hover:scale-110 transition-transform"><img src="https://cdn-icons-png.flaticon.com/128/13640/13640322.png" className="w-full h-full object-contain filter drop-shadow-md" /><div className="absolute -bottom-1 w-5 h-5 bg-slate-600 text-white rounded-full flex items-center justify-center font-black border-2 border-slate-300 shadow-md text-[10px] z-20">3</div></div>;
+    return <div className="w-8 h-8 rounded-lg bg-slate-800 text-white flex items-center justify-center font-black text-sm border-b-4 border-slate-600 shadow-md">{rank}</div>;
 };
 
 // --- MAIN PAGE ---
 const WorldPage = () => {
-    // ✅ Lấy thêm notifications và setNotifications từ Context
     const { user, notifications, setNotifications } = useAppContext();
-    
     const [activeTab, setActiveTab] = useState('ranking'); 
     const [leaderboard, setLeaderboard] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -103,24 +60,15 @@ const WorldPage = () => {
     const getCountryInfo = (c) => ({ name: COUNTRY_MAP[c] || c, flag: c && c !== 'OT' ? `https://flagcdn.com/20x15/${c.toLowerCase()}.png` : null });
     const getRankTierInfo = (idx) => RANK_TIERS.find(t => idx + 1 <= t.limit) || RANK_TIERS[RANK_TIERS.length - 1];
     
-    // ✅ Hàm chuyển tab & xóa thông báo khi xem
     const handleTabChange = (tabName) => {
         setActiveTab(tabName);
-        
-        // Nếu bấm vào tab Tin nhắn -> Xóa số đỏ tin nhắn
-        if (tabName === 'messages') {
-            setNotifications(prev => ({ ...prev, message: 0 }));
-        }
-        // Nếu bấm vào tab Diễn đàn -> Xóa số đỏ diễn đàn
-        if (tabName === 'forum') {
-            setNotifications(prev => ({ ...prev, forum: 0 }));
-        }
+        if (tabName === 'messages') setNotifications(prev => ({ ...prev, message: 0 }));
+        if (tabName === 'forum') setNotifications(prev => ({ ...prev, forum: 0 }));
     };
 
-    // Xử lý khi bấm vào user trên BXH
     const handleUserClick = (u) => { 
         setSelectedUser(u); 
-        setActiveTab('friends'); // Chuyển sang tab Bạn Bè để xem hồ sơ
+        setActiveTab('friends'); 
     };
     
     const handleFriendTabClick = () => { 
@@ -128,15 +76,50 @@ const WorldPage = () => {
         setActiveTab('friends'); 
     };
 
+    // 🔥 FETCH DATA: XẾP HẠNG CÔNG TÂM (ĐIỂM CHIẾN CÔNG -> BÀI HỌC)
     useEffect(() => {
         if (activeTab === 'ranking') {
             const fetchLeaderboard = async () => {
                 setLoading(true);
-                const { data } = await supabase.from('users')
+                
+                // 1. Lấy Users
+                const { data: users } = await supabase.from('users')
                     .select('id, full_name, avatar, lessons_completed, kanji_learned, level, gender, country, bio, email, phone, address, birthdate')
-                    .order('lessons_completed', { ascending: false })
-                    .limit(100);
-                setLeaderboard(data || []);
+                    .limit(200); // Lấy rộng hơn chút để sắp xếp lại
+
+                if (users) {
+                    // 2. Lấy điểm Chiến Công
+                    const userIds = users.map(u => u.id);
+                    const { data: scores } = await supabase
+                        .from('challenge_progress')
+                        .select('user_id, score')
+                        .in('user_id', userIds);
+
+                    // 3. Tính tổng điểm
+                    const scoreMap = {};
+                    if (scores) {
+                        scores.forEach(item => {
+                            if (!scoreMap[item.user_id]) scoreMap[item.user_id] = 0;
+                            scoreMap[item.user_id] += item.score;
+                        });
+                    }
+
+                    // 4. Gộp và SẮP XẾP LẠI (QUAN TRỌNG)
+                    const mergedData = users.map(u => ({
+                        ...u,
+                        total_challenge_score: scoreMap[u.id] || 0
+                    }));
+
+                    // 🔥 LOGIC CÔNG TÂM: Ưu tiên Điểm Chiến Công, nếu bằng nhau thì so Bài học
+                    mergedData.sort((a, b) => {
+                        if (b.total_challenge_score !== a.total_challenge_score) {
+                            return b.total_challenge_score - a.total_challenge_score;
+                        }
+                        return b.lessons_completed - a.lessons_completed;
+                    });
+                    
+                    setLeaderboard(mergedData.slice(0, 100)); // Lấy top 100 sau khi sort
+                }
                 setLoading(false);
             };
             fetchLeaderboard();
@@ -162,45 +145,14 @@ const WorldPage = () => {
                         </p>
                     </div>
                     
-                    {/* ✅ THANH MENU VỚI BADGE THÔNG BÁO ĐỎ */}
                     <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex gap-1">
-                        <button 
-                            onClick={() => handleTabChange('ranking')} 
-                            className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'ranking' ? 'bg-slate-900 text-white shadow-md' : 'text-gray-400 hover:text-slate-900'}`}
-                        >
-                            🏆 BXH
+                        <button onClick={() => handleTabChange('ranking')} className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'ranking' ? 'bg-slate-900 text-white shadow-md' : 'text-gray-400 hover:text-slate-900'}`}>🏆 BXH</button>
+                        <button onClick={handleFriendTabClick} className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'friends' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-indigo-600'}`}>🤝 Bạn Bè</button>
+                        <button onClick={() => handleTabChange('messages')} className={`relative px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'messages' ? 'bg-teal-600 text-white shadow-md' : 'text-gray-400 hover:text-teal-600'}`}>
+                            💬 Tin Nhắn {notifications?.message > 0 && <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-bold border-2 border-white animate-bounce shadow-sm">{notifications.message > 99 ? '99+' : notifications.message}</span>}
                         </button>
-                        <button 
-                            onClick={handleFriendTabClick} 
-                            className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'friends' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-indigo-600'}`}
-                        >
-                            🤝 Bạn Bè
-                        </button>
-                        
-                        {/* 🆕 NÚT TIN NHẮN + BADGE */}
-                        <button 
-                            onClick={() => handleTabChange('messages')} 
-                            className={`relative px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'messages' ? 'bg-teal-600 text-white shadow-md' : 'text-gray-400 hover:text-teal-600'}`}
-                        >
-                            💬 Tin Nhắn
-                            {notifications?.message > 0 && (
-                                <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-bold border-2 border-white animate-bounce shadow-sm">
-                                    {notifications.message > 99 ? '99+' : notifications.message}
-                                </span>
-                            )}
-                        </button>
-
-                        {/* 🆕 NÚT DIỄN ĐÀN + BADGE */}
-                        <button 
-                            onClick={() => handleTabChange('forum')} 
-                            className={`relative px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'forum' ? 'bg-pink-600 text-white shadow-md' : 'text-gray-400 hover:text-pink-600'}`}
-                        >
-                            🗨️ Diễn Đàn
-                            {notifications?.forum > 0 && (
-                                <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-bold border-2 border-white animate-bounce shadow-sm">
-                                    {notifications.forum > 99 ? '99+' : notifications.forum}
-                                </span>
-                            )}
+                        <button onClick={() => handleTabChange('forum')} className={`relative px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'forum' ? 'bg-pink-600 text-white shadow-md' : 'text-gray-400 hover:text-pink-600'}`}>
+                            🗨️ Diễn Đàn {notifications?.forum > 0 && <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-bold border-2 border-white animate-bounce shadow-sm">{notifications.forum > 99 ? '99+' : notifications.forum}</span>}
                         </button>
                     </div>
                 </div>
@@ -208,7 +160,7 @@ const WorldPage = () => {
                 {/* CONTENT AREA */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 relative z-10 w-full max-w-5xl mx-auto">
                     
-                    {/* --- TAB 1: BẢNG XẾP HẠNG --- */}
+                    {/* --- TAB 1: BẢNG XẾP HẠNG (ĐÃ THÊM CỘT CHIẾN CÔNG) --- */}
                     {activeTab === 'ranking' && (
                         loading ? <div className="flex justify-center h-64 items-center text-gray-400 font-bold animate-pulse">⏳ Đang tải...</div> : (
                             <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl overflow-hidden">
@@ -219,6 +171,8 @@ const WorldPage = () => {
                                             <th className="py-4 pl-4">Chiến binh</th>
                                             <th className="py-4 text-center w-36">Trình độ</th>
                                             <th className="py-4 text-center w-32">Sức mạnh</th>
+                                            {/* 🔥 CỘT MỚI: CHIẾN CÔNG 🔥 */}
+                                            <th className="py-4 text-center w-36 text-red-600">Chiến Công</th>
                                             <th className="py-4 text-right pr-8 w-32">Thành tựu</th>
                                         </tr>
                                     </thead>
@@ -256,41 +210,35 @@ const WorldPage = () => {
                                                         </div>
                                                     </td>
                                                     <td className="py-4 text-center"><LevelBadge level={u.level} /></td>
-                                                    <td className="py-4 text-center"><div className="inline-flex flex-col items-center"><span className={`font-black text-lg ${idx < 3 ? 'text-yellow-600' : 'text-slate-700'}`}>{u.kanji_learned || 0}</span><span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-1.5 rounded-full mt-0.5">Kanji</span></div></td>
+                                                    <td className="py-4 text-center">
+                                                        <div className="inline-flex flex-col items-center">
+                                                            <span className={`font-black text-lg ${idx < 3 ? 'text-yellow-600' : 'text-slate-700'}`}>{u.kanji_learned || 0}</span>
+                                                            <span className="text-[8px] font-bold text-gray-400 uppercase tracking-widest bg-gray-100 px-1.5 rounded-full mt-0.5">Kanji</span>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    {/* 🔥 CỘT ĐIỂM CHIẾN CÔNG (MỚI) 🔥 */}
+                                                    <td className="py-4 text-center">
+                                                        <div className="inline-flex flex-col items-center bg-red-50 border border-red-100 px-3 py-1 rounded-lg">
+                                                            <span className="font-black text-red-600 text-lg">{u.total_challenge_score ? u.total_challenge_score.toLocaleString() : 0}</span>
+                                                            <span className="text-[8px] font-bold text-red-300 uppercase tracking-widest">Điểm</span>
+                                                        </div>
+                                                    </td>
+
                                                     <td className="py-4 text-right pr-8"><div className={`inline-block px-4 py-2 rounded-xl font-black text-xs shadow-md transition-transform group-hover:scale-105 ${idx === 0 ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white' : 'bg-slate-900 text-white'}`}>{u.lessons_completed || 0} <span className="opacity-70 ml-0.5">BÀI</span></div></td>
                                                 </tr>
                                             );
-                                        }) : <tr><td colSpan="5" className="py-20 text-center text-gray-400 font-medium">Chưa có dữ liệu chiến binh.</td></tr>}
+                                        }) : <tr><td colSpan="6" className="py-20 text-center text-gray-400 font-medium">Chưa có dữ liệu chiến binh.</td></tr>}
                                     </tbody>
                                 </table>
                             </div>
                         )
                     )}
 
-                    {/* --- TAB 2: BẠN BÈ --- */}
-                    {activeTab === 'friends' && (
-                        <FriendSystem 
-                            user={user} 
-                            initialSelectedUser={selectedUser} 
-                            onBackToRank={selectedUser ? () => {
-                                setSelectedUser(null);
-                                setActiveTab('ranking'); 
-                            } : null} 
-                        />
-                    )}
-
-                    {/* --- TAB 3: TIN NHẮN (MỚI) --- */}
-                    {activeTab === 'messages' && (
-                        <MessageSystem user={user} />
-                    )}
-
-                    {/* --- TAB 4: DIỄN ĐÀN --- */}
-                    {activeTab === 'forum' && (
-                        <ForumTab 
-                            user={user} 
-                            onUserClick={handleUserClick} 
-                        />
-                    )}
+                    {/* --- CÁC TAB KHÁC --- */}
+                    {activeTab === 'friends' && <FriendSystem user={user} initialSelectedUser={selectedUser} onBackToRank={selectedUser ? () => { setSelectedUser(null); setActiveTab('ranking'); } : null} />}
+                    {activeTab === 'messages' && <MessageSystem user={user} />}
+                    {activeTab === 'forum' && <ForumTab user={user} onUserClick={handleUserClick} />}
                 </div>
             </main>
             
