@@ -388,7 +388,30 @@ export const translations = {
     myposts_toast_success: "Đã xóa thành công",
     myposts_empty: "Bạn chưa đăng bài viết nào.",
     myposts_no_title: "Không có tiêu đề",
-    myposts_error: "Lỗi: "
+    myposts_error: "Lỗi: ",
+    auth_help: "HELP",
+    auth_forgot_pass: "Quên mật khẩu?", // <--- THÊM DÒNG NÀY,
+    forgot_title_step1: "QUÊN MẬT KHẨU?",
+    forgot_title_step2: "ĐẶT LẠI MẬT KHẨU",
+    forgot_desc_step1: "Nhập email để nhận link khôi phục.",
+    forgot_desc_step2: "Nhập mật khẩu mới của bạn.",
+    forgot_label_email: "EMAIL CỦA BẠN",
+    forgot_label_new_pass: "MẬT KHẨU MỚI",
+    forgot_label_confirm_pass: "XÁC NHẬN MẬT KHẨU",
+    forgot_btn_send: "GỬI LINK KHÔI PHỤC",
+    forgot_btn_sending: "ĐANG GỬI...",
+    forgot_btn_reset: "XÁC NHẬN ĐỔI",
+    forgot_btn_processing: "ĐANG XỬ LÝ...",
+    forgot_close: "ĐÓNG",
+    
+    // Messages
+    forgot_err_email_not_found: "Email này chưa được đăng ký!",
+    forgot_success_sent: "Link khôi phục đã được gửi vào email của bạn!",
+    forgot_err_send_mail: "Lỗi gửi mail: ",
+    forgot_err_pass_match: "Mật khẩu xác nhận không khớp!",
+    forgot_err_invalid_link: "Link không hợp lệ hoặc đã hết hạn!",
+    forgot_success_reset: "Đổi mật khẩu thành công! Đang chuyển về đăng nhập...",
+    forgot_error_prefix: "Lỗi: "
   },
 
   // =================================================================
@@ -768,7 +791,30 @@ export const translations = {
     myposts_toast_success: "Deleted successfully",
     myposts_empty: "You haven't posted anything yet.",
     myposts_no_title: "No title",
-    myposts_error: "Error: "
+    myposts_error: "Error: ",
+    auth_help: "HELP",
+    auth_forgot_pass: "Forgot Password?", // <--- THÊM DÒNG NÀY
+    forgot_title_step1: "FORGOT PASSWORD?",
+    forgot_title_step2: "RESET PASSWORD",
+    forgot_desc_step1: "Enter your email to receive a recovery link.",
+    forgot_desc_step2: "Enter your new password.",
+    forgot_label_email: "YOUR EMAIL",
+    forgot_label_new_pass: "NEW PASSWORD",
+    forgot_label_confirm_pass: "CONFIRM PASSWORD",
+    forgot_btn_send: "SEND RECOVERY LINK",
+    forgot_btn_sending: "SENDING...",
+    forgot_btn_reset: "CONFIRM RESET",
+    forgot_btn_processing: "PROCESSING...",
+    forgot_close: "CLOSE",
+    
+    // Messages
+    forgot_err_email_not_found: "Email not registered!",
+    forgot_success_sent: "Recovery link sent to your email!",
+    forgot_err_send_mail: "Error sending mail: ",
+    forgot_err_pass_match: "Passwords do not match!",
+    forgot_err_invalid_link: "Link is invalid or expired!",
+    forgot_success_reset: "Password reset successful! Redirecting to login...",
+    forgot_error_prefix: "Error: "
   },
 
   // =================================================================
@@ -1145,7 +1191,30 @@ export const translations = {
     myposts_toast_success: "削除しました",
     myposts_empty: "まだ投稿がありません。",
     myposts_no_title: "タイトルなし",
-    myposts_error: "エラー: "
+    myposts_error: "エラー: ",
+    auth_help: "ヘルプ",
+    auth_forgot_pass: "パスワードを忘れましたか？", // <--- THÊM DÒNG NÀY
+    forgot_title_step1: "パスワードを忘れた？",
+    forgot_title_step2: "パスワードの再設定",
+    forgot_desc_step1: "メールアドレスを入力して、復旧リンクを受け取ってください。",
+    forgot_desc_step2: "新しいパスワードを入力してください。",
+    forgot_label_email: "メールアドレス",
+    forgot_label_new_pass: "新しいパスワード",
+    forgot_label_confirm_pass: "パスワード確認",
+    forgot_btn_send: "復旧リンクを送信",
+    forgot_btn_sending: "送信中...",
+    forgot_btn_reset: "再設定を確定",
+    forgot_btn_processing: "処理中...",
+    forgot_close: "閉じる",
+    
+    // Messages
+    forgot_err_email_not_found: "このメールアドレスは登録されていません！",
+    forgot_success_sent: "復旧リンクをメールに送信しました！",
+    forgot_err_send_mail: "メール送信エラー: ",
+    forgot_err_pass_match: "パスワードが一致しません！",
+    forgot_err_invalid_link: "リンクが無効か、期限切れです！",
+    forgot_success_reset: "パスワードを変更しました！ログイン画面へ移動します...",
+    forgot_error_prefix: "エラー: "
   },
 
   // =================================================================
@@ -1522,7 +1591,30 @@ export const translations = {
     myposts_toast_success: "删除成功",
     myposts_empty: "你还没有发布任何帖子。",
     myposts_no_title: "无标题",
-    myposts_error: "错误: "
+    myposts_error: "错误: ",
+    auth_help: "帮助",
+    auth_forgot_pass: "忘记密码？", // <--- THÊM DÒNG NÀY
+    forgot_title_step1: "忘记密码？",
+    forgot_title_step2: "重置密码",
+    forgot_desc_step1: "输入邮箱以接收恢复链接。",
+    forgot_desc_step2: "输入您的新密码。",
+    forgot_label_email: "您的邮箱",
+    forgot_label_new_pass: "新密码",
+    forgot_label_confirm_pass: "确认密码",
+    forgot_btn_send: "发送恢复链接",
+    forgot_btn_sending: "正在发送...",
+    forgot_btn_reset: "确认重置",
+    forgot_btn_processing: "处理中...",
+    forgot_close: "关闭",
+    
+    // Messages
+    forgot_err_email_not_found: "此邮箱尚未注册！",
+    forgot_success_sent: "恢复链接已发送至您的邮箱！",
+    forgot_err_send_mail: "发送邮件错误: ",
+    forgot_err_pass_match: "确认密码不匹配！",
+    forgot_err_invalid_link: "链接无效或已过期！",
+    forgot_success_reset: "密码重置成功！正在跳转至登录...",
+    forgot_error_prefix: "错误: "
   },
 
   // =================================================================
@@ -1899,6 +1991,29 @@ export const translations = {
     myposts_toast_success: "삭제되었습니다",
     myposts_empty: "아직 게시물이 없습니다.",
     myposts_no_title: "제목 없음",
-    myposts_error: "오류: "
+    myposts_error: "오류: ",
+    auth_help: "도움말",
+    auth_forgot_pass: "비밀번호를 잊으셨나요?", // <--- THÊM DÒNG NÀY
+    forgot_title_step1: "비밀번호 찾기?",
+    forgot_title_step2: "비밀번호 재설정",
+    forgot_desc_step1: "이메일을 입력하여 복구 링크를 받으세요.",
+    forgot_desc_step2: "새 비밀번호를 입력하세요.",
+    forgot_label_email: "이메일",
+    forgot_label_new_pass: "새 비밀번호",
+    forgot_label_confirm_pass: "비밀번호 확인",
+    forgot_btn_send: "복구 링크 보내기",
+    forgot_btn_sending: "전송 중...",
+    forgot_btn_reset: "재설정 확인",
+    forgot_btn_processing: "처리 중...",
+    forgot_close: "닫기",
+    
+    // Messages
+    forgot_err_email_not_found: "등록되지 않은 이메일입니다!",
+    forgot_success_sent: "복구 링크가 이메일로 발송되었습니다!",
+    forgot_err_send_mail: "메일 전송 오류: ",
+    forgot_err_pass_match: "비밀번호가 일치하지 않습니다!",
+    forgot_err_invalid_link: "유효하지 않거나 만료된 링크입니다!",
+    forgot_success_reset: "비밀번호 변경 성공! 로그인 화면으로 이동합니다...",
+    forgot_error_prefix: "오류: "
   }
 };
