@@ -13,7 +13,7 @@ const LANGUAGES = [
     { code: 'ko', label: 'TIẾNG HÀN', flag: '🇰🇷' }
 ];
 
-// --- DROPDOWN COMPONENT ---
+// --- DROPDOWN COMPONENT (GIỮ NGUYÊN) ---
 const CustomDropdown = ({ value, onChange, options, disabled }) => {
     const [isOpen, setIsOpen] = useState(false);
     const containerRef = useRef(null);
@@ -66,6 +66,7 @@ const TranslatorPage = () => {
     
     const [inputText, setInputText] = useState("");
     const [translatedText, setTranslatedText] = useState("");
+    const [transliteration, setTransliteration] = useState(""); 
     const [isTranslating, setIsTranslating] = useState(false);
     
     const [sourceLang, setSourceLang] = useState('auto');
@@ -82,7 +83,11 @@ const TranslatorPage = () => {
     useEffect(() => {
         const timer = setTimeout(() => {
             if (inputText.trim()) handleTranslate();
-            else { setTranslatedText(""); setDetectedLangDisplay(null); }
+            else { 
+                setTranslatedText(""); 
+                setTransliteration(""); 
+                setDetectedLangDisplay(null); 
+            }
         }, 800); 
         return () => clearTimeout(timer);
     }, [inputText, sourceLang, targetLang]);
@@ -96,17 +101,32 @@ const TranslatorPage = () => {
 
             if (apiSource === apiTarget && actualSource !== 'auto') {
                 setTranslatedText(inputText);
+                setTransliteration("");
                 setIsTranslating(false);
                 return;
             }
 
-            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${apiSource}&tl=${apiTarget}&dt=t&q=${encodeURIComponent(inputText)}`;
+            const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${apiSource}&tl=${apiTarget}&dt=t&dt=rm&q=${encodeURIComponent(inputText)}`;
             const response = await fetch(url);
             const data = await response.json();
             
             if (data && data[0]) {
-                const result = data[0].map(item => item[0]).join("");
+                const translationParts = data[0].filter(item => item[0] && item[1] !== null && item[1] !== undefined); 
+                const result = translationParts.map(item => item[0]).join("");
                 setTranslatedText(result);
+
+                const romajiPart = data[0][data[0].length - 1];
+                if (romajiPart && (romajiPart[1] === null || romajiPart[1] === undefined || romajiPart[1] === "") && romajiPart[2]) {
+                     setTransliteration(romajiPart[2] || romajiPart[3] || "");
+                } else {
+                    const foundRomaji = data[0].find(item => item[2] || item[3]);
+                    if (foundRomaji) {
+                         setTransliteration(foundRomaji[2] || foundRomaji[3] || "");
+                    } else {
+                        setTransliteration("");
+                    }
+                }
+
                 if (sourceLang === 'auto' && data[2]) {
                     const detectedCode = data[2];
                     let appCode = detectedCode;
@@ -118,6 +138,7 @@ const TranslatorPage = () => {
         } catch (err) {
             console.error(err);
             setTranslatedText("Lỗi kết nối...");
+            setTransliteration("");
         } finally {
             setIsTranslating(false);
         }
@@ -128,7 +149,8 @@ const TranslatorPage = () => {
         setSourceLang(targetLang);
         setTargetLang(sourceLang);
         setInputText(translatedText); 
-        setTranslatedText(inputText);
+        setTranslatedText(inputText); 
+        setTransliteration("");
     };
 
     const relatedKanji = dictionaryData.filter(item => (inputText + translatedText).includes(item.kanji));
@@ -137,17 +159,14 @@ const TranslatorPage = () => {
         <div className="flex h-screen bg-[#Fdfdfd] font-sans text-slate-900 overflow-hidden">
             <Sidebar />
             
-            {/* CONTAINER CHÍNH: Dùng flex-col và overflow-hidden để kiểm soát layout */}
             <main className="flex-1 h-full flex flex-col bg-slate-50/50 p-6 md:p-8 overflow-hidden">
                 
                 <h1 className="text-3xl font-black text-slate-800 mb-6 tracking-tight shrink-0">Dịch Thuật AI</h1>
 
-                {/* --- KHUNG DỊCH (FLEX-1 để giãn hết chiều cao còn lại) --- */}
                 <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 flex flex-col md:flex-row relative z-10 flex-1 min-h-0 overflow-hidden">
                     
                     {/* INPUT SECTION */}
                     <div className="flex-1 flex flex-col border-b md:border-b-0 md:border-r border-gray-100 relative min-h-0">
-                        {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-50 bg-white z-20 shrink-0">
                             <CustomDropdown value={sourceLang} onChange={setSourceLang} options={LANGUAGES} />
                             {detectedLangDisplay && sourceLang === 'auto' && (
@@ -157,18 +176,16 @@ const TranslatorPage = () => {
                             )}
                         </div>
                         
-                        {/* Textarea: flex-1 để giãn full chiều cao */}
                         <textarea 
-                            className="w-full flex-1 p-6 resize-none outline-none text-2xl font-medium text-slate-800 placeholder-gray-300 bg-transparent leading-relaxed custom-scrollbar"
+                            className="w-full flex-1 p-6 resize-none outline-none text-2xl font-medium text-slate-700 placeholder-gray-300 bg-transparent leading-relaxed custom-scrollbar"
                             placeholder="Nhập văn bản..."
                             value={inputText}
                             onChange={e => setInputText(e.target.value)}
                             spellCheck="false"
                         />
 
-                        {/* Clear Button */}
                         {inputText && (
-                            <button onClick={() => { setInputText(''); setTranslatedText(''); }} className="absolute bottom-6 right-6 text-gray-300 hover:text-red-500 transition-colors p-2 bg-white rounded-full shadow-sm border border-gray-100 z-30">
+                            <button onClick={() => { setInputText(''); setTranslatedText(''); setTransliteration(''); }} className="absolute bottom-6 right-6 text-gray-300 hover:text-red-500 transition-colors p-2 bg-white rounded-full shadow-sm border border-gray-100 z-30">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                             </button>
                         )}
@@ -187,7 +204,6 @@ const TranslatorPage = () => {
 
                     {/* OUTPUT SECTION */}
                     <div className="flex-1 flex flex-col bg-slate-50/30 min-h-0">
-                        {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-gray-100/50 shrink-0">
                             <CustomDropdown value={targetLang} onChange={setTargetLang} options={LANGUAGES.filter(l => l.code !== 'auto')} />
                             <button onClick={() => navigator.clipboard.writeText(translatedText)} className="text-gray-400 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-blue-50" title="Sao chép">
@@ -195,22 +211,34 @@ const TranslatorPage = () => {
                             </button>
                         </div>
                         
-                        {/* Result Area: flex-1 để giãn full chiều cao */}
-                        <div className="flex-1 p-6 text-2xl font-medium text-slate-800 leading-relaxed custom-scrollbar overflow-y-auto">
+                        <div className="flex-1 p-6 overflow-y-auto custom-scrollbar flex flex-col">
                             {isTranslating ? (
                                 <div className="flex items-center gap-3 text-gray-400 animate-pulse mt-4">
                                     <span className="w-5 h-5 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin"></span>
                                     <span className="text-sm font-bold uppercase tracking-wider">Đang dịch...</span>
                                 </div>
                             ) : (
-                                translatedText || <span className="text-gray-300 select-none">Bản dịch sẽ hiện ở đây...</span>
+                                <>
+                                    <div className="flex-1 flex flex-col gap-2"> 
+                                        {/* PHẦN DỊCH CHÍNH (TO, ĐẬM) */}
+                                        <div className="text-3xl md:text-4xl font-bold text-slate-800 leading-relaxed break-words">
+                                            {translatedText || <span className="text-gray-300 select-none text-2xl font-normal">Bản dịch sẽ hiện ở đây...</span>}
+                                        </div>
+                                        
+                                        {/* 🔥 PHẦN PHIÊN ÂM (NGAY DƯỚI, MÀU NHẠT HƠN, FONT CHUẨN) */}
+                                        {translatedText && transliteration && (
+                                            <div className="text-lg md:text-xl text-slate-500 font-medium font-sans leading-relaxed break-words">
+                                                {transliteration}
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
                             )}
                         </div>
                     </div>
                 </div>
 
-                {/* --- KANJI FOUND (DƯỚI CÙNG, NẾU CÓ) --- */}
-                {/* Dùng shrink-0 để không bị co lại, và mt-6 để tạo khoảng cách */}
+                {/* --- KANJI FOUND --- */}
                 {relatedKanji.length > 0 && (
                     <div className="mt-6 shrink-0 animate-fade-in-up pb-2">
                         <div className="flex items-center gap-4 mb-4">
