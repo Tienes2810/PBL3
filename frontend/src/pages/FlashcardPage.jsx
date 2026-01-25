@@ -2,27 +2,33 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { useAppContext } from '../context/AppContext';
-import { flashcardData } from "../utils/kanji-dictionary";
 import { supabase } from '../supabaseClient'; 
+import kanjiBase from '../utils/kanji-base.json';
+import jukugoBase from '../utils/jukugo-data.json';
 
-// --- COMPONENT MODAL XÁC NHẬN (GIỮ NGUYÊN) ---
+// --- BỘ ICON SVG GỌN ĐẸP ---
+const Icons = {
+    back: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>,
+    reload: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+    forgot: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>,
+    hard: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+    good: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/></svg>,
+    easy: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>,
+    master: <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+    card: <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+};
+
 const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
     if (!isOpen) return null;
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
-            <div className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl animate-scale-up text-center border border-gray-100">
-                <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
-                    ↺
-                </div>
-                <h3 className="text-xl font-black text-slate-800 mb-2">{title}</h3>
-                <p className="text-gray-500 text-sm font-medium mb-8 leading-relaxed">{message}</p>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl animate-scale-up text-center border border-gray-100">
+                <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">{Icons.reload}</div>
+                <h3 className="text-xl font-bold text-slate-800 mb-2">{title}</h3>
+                <p className="text-gray-500 text-sm mb-8 leading-relaxed">{message}</p>
                 <div className="flex gap-3">
-                    <button onClick={onCancel} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all">
-                        Hủy
-                    </button>
-                    <button onClick={onConfirm} className="flex-1 py-3 rounded-xl font-bold bg-blue-500 text-white hover:bg-blue-600 shadow-lg shadow-blue-200 transition-all">
-                        Ôn tập ngay
-                    </button>
+                    <button onClick={onCancel} className="flex-1 py-3 rounded-xl font-bold text-gray-500 hover:bg-gray-50 transition-all border border-gray-200">Hủy</button>
+                    <button onClick={onConfirm} className="flex-1 py-3 rounded-xl font-bold bg-slate-900 text-white hover:bg-slate-800 shadow-lg transition-all">Học lại</button>
                 </div>
             </div>
         </div>
@@ -31,429 +37,285 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel }) => {
 
 const FlashcardPage = () => {
   const navigate = useNavigate();
-  const { t, user } = useAppContext();
+  const { user } = useAppContext();
   const ITEMS_PER_LESSON = 16; 
 
-  // --- STATE ---
   const [mode, setMode] = useState('menu'); 
+  const [deckType, setDeckType] = useState('single'); 
   const [currentLesson, setCurrentLesson] = useState(null);
   const [queue, setQueue] = useState([]); 
   const [isFlipped, setIsFlipped] = useState(false);   
   const [finished, setFinished] = useState(false);     
   const [stats, setStats] = useState({ review: 0, mastered: 0 }); 
   const [sessionTotal, setSessionTotal] = useState(0); 
-  
-  // State cho Modal xác nhận
   const [lessonToReview, setLessonToReview] = useState(null);
-
-  const [masteredKanjiList, setMasteredKanjiList] = useState([]);
+  
+  // State tiến độ đồng bộ Database
+  const [masteredList, setMasteredList] = useState([]);
   const [completedLessons, setCompletedLessons] = useState({});
+  const [loadingProgress, setLoadingProgress] = useState(true);
 
-  // 🔥 FIX LỖI: Load dữ liệu theo USER ID (Mỗi người một kho riêng)
+  // 🔥 1. LOAD TIẾN ĐỘ TỪ SUPABASE
   useEffect(() => {
-      if (user && user.id) {
-          // 1. Load danh sách từ đã thuộc của user này
-          const userMasteredKey = `mastered_kanji_${user.id}`;
-          const localList = JSON.parse(localStorage.getItem(userMasteredKey) || '[]');
-          setMasteredKanjiList(localList);
+    const fetchProgress = async () => {
+      if (!user?.id) return;
+      setLoadingProgress(true);
 
-          // 2. Load danh sách bài đã học xong của user này
-          const userProgressKey = `kanji_progress_${user.id}`;
-          const savedProgress = localStorage.getItem(userProgressKey);
-          setCompletedLessons(savedProgress ? JSON.parse(savedProgress) : {});
+      const { data, error } = await supabase
+        .from('users')
+        .select('mastered_kanji, mastered_jukugo, completed_kanji_lessons, completed_jukugo_lessons')
+        .eq('id', user.id)
+        .single();
+
+      if (data) {
+        if (deckType === 'single') {
+          setMasteredList(data.mastered_kanji || []);
+          const lessonsMap = {};
+          (data.completed_kanji_lessons || []).forEach(id => lessonsMap[id] = true);
+          setCompletedLessons(lessonsMap);
+        } else {
+          setMasteredList(data.mastered_jukugo || []);
+          const lessonsMap = {};
+          (data.completed_jukugo_lessons || []).forEach(id => lessonsMap[id] = true);
+          setCompletedLessons(lessonsMap);
+        }
       }
-  }, [user]); // Chạy lại mỗi khi user thay đổi (đăng nhập/đăng xuất)
+      setLoadingProgress(false);
+    };
+
+    fetchProgress();
+  }, [user, deckType]);
 
   const generatedLessons = useMemo(() => {
-    const lessons = [];
-    const sourceData = flashcardData || []; 
-    if (sourceData.length === 0) return [];
-
-    for (let i = 0; i < sourceData.length; i += ITEMS_PER_LESSON) {
-        const chunk = sourceData.slice(i, i + ITEMS_PER_LESSON);
-        const lessonNumber = Math.floor(i / ITEMS_PER_LESSON) + 1;
-        const firstChar = chunk[0]?.kanji || "?";
-        const lastChar = chunk[chunk.length - 1]?.kanji || "?";
-
-        let lessonTitle = "";
-        const label = t?.flashcard_lesson || "Bài";
-        if (label.includes('~')) {
-            lessonTitle = label.replace('~', lessonNumber);
-        } else {
-            lessonTitle = `${label} ${lessonNumber}`;
+    let lessons = [];
+    if (deckType === 'single') {
+        for (let i = 0; i < kanjiBase.length; i += ITEMS_PER_LESSON) {
+            const chunk = kanjiBase.slice(i, i + ITEMS_PER_LESSON);
+            const num = Math.floor(i / ITEMS_PER_LESSON) + 1;
+            lessons.push({ id: num, title: `Bài ${num}`, desc: { start: chunk[0]?.kanji, end: chunk[chunk.length - 1]?.kanji }, originalCards: chunk });
         }
-
-        lessons.push({
-            id: lessonNumber,
-            title: lessonTitle,
-            desc: { start: firstChar, end: lastChar }, 
-            originalCards: chunk
+    } else {
+        const grouped = {};
+        jukugoBase.forEach(item => {
+            if (!grouped[item.lesson]) grouped[item.lesson] = [];
+            grouped[item.lesson].push(item);
+        });
+        Object.keys(grouped).sort((a,b) => a - b).forEach(id => {
+            lessons.push({ id: parseInt(id), title: `Bài ${id}`, desc: { start: grouped[id][0]?.kanji, end: grouped[id][grouped[id].length - 1]?.kanji }, originalCards: grouped[id] });
         });
     }
     return lessons;
-  }, [t]); 
+  }, [deckType]);
 
-  // 🔥 FIX LỖI: Lưu tiến độ theo USER ID
-  const markLessonComplete = (lessonId) => {
-      if (!user || !user.id) return;
-
-      const newProgress = { ...completedLessons, [lessonId]: true };
-      setCompletedLessons(newProgress);
+  const prepareGame = (lesson, isReview) => {
+      const cards = isReview 
+        ? lesson.originalCards 
+        : lesson.originalCards.filter(card => !masteredList.includes(card.kanji));
       
-      const userProgressKey = `kanji_progress_${user.id}`;
-      localStorage.setItem(userProgressKey, JSON.stringify(newProgress));
-  };
-
-  // --- LOGIC CẬP NHẬT ĐIỂM (CÓ CHECK) ---
-  const incrementKanjiCount = async (kanjiChar, lessonId) => {
-      if (!user || !user.id) return;
-      
-      // 🛑 CHẶN: Nếu bài này ĐÃ HOÀN THÀNH rồi -> Không cộng điểm nữa
-      if (completedLessons[lessonId]) {
-          console.log("⚠️ Đang ôn tập bài cũ, không tính điểm xếp hạng.");
-          return;
-      }
-
-      // 🔥 FIX LỖI: Check trong localStorage của đúng User đó
-      const userMasteredKey = `mastered_kanji_${user.id}`;
-      const localMasteredList = JSON.parse(localStorage.getItem(userMasteredKey) || '[]');
-      
-      if (localMasteredList.includes(kanjiChar)) return; 
-
-      try {
-          const { data, error } = await supabase.from('users').select('kanji_learned').eq('id', user.id).single();
-          if (error) throw error;
-          const currentKanji = data?.kanji_learned || 0;
-          await supabase.from('users').update({ kanji_learned: currentKanji + 1 }).eq('id', user.id);
-          
-          localMasteredList.push(kanjiChar);
-          // Lưu lại vào key riêng của user
-          localStorage.setItem(userMasteredKey, JSON.stringify(localMasteredList));
-          setMasteredKanjiList(localMasteredList);
-
-      } catch (err) {
-          console.error("Lỗi cộng Kanji:", err.message);
-      }
-  };
-
-  const incrementLessonCount = async (lessonId) => {
-      if (!user || !user.id) return;
-      
-      // 🛑 CHẶN: Bài cũ không cộng điểm bài
-      if (completedLessons[lessonId]) return;
-
-      try {
-          const { data, error } = await supabase.from('users').select('lessons_completed').eq('id', user.id).single();
-          if (error) throw error;
-          const currentLessonCount = data?.lessons_completed || 0;
-          await supabase.from('users').update({ lessons_completed: currentLessonCount + 1 }).eq('id', user.id);
-      } catch (err) {
-          console.error("Lỗi hoàn thành bài:", err.message);
-      }
-  };
-
-  // --- 1. XỬ LÝ BẮT ĐẦU ÔN TẬP ---
-  const startReview = () => {
-      if (!lessonToReview) return;
-      
-      const lesson = lessonToReview;
-      const allCards = [...lesson.originalCards].sort(() => 0.5 - Math.random());
-
       setCurrentLesson(lesson);
       setStats({ review: 0, mastered: 0 });
       setFinished(false);
       setIsFlipped(false);
       setMode('game');
-      setQueue(allCards);
-      setSessionTotal(allCards.length); 
-      setLessonToReview(null); 
+      setSessionTotal(cards.length);
+      setQueue(cards.length === 0 ? [] : [...cards].sort(() => 0.5 - Math.random()));
+      if (cards.length === 0) setFinished(true);
+      setLessonToReview(null);
   };
 
-  // --- 2. XỬ LÝ BẮT ĐẦU HỌC MỚI ---
-  const handleSelectLesson = (lesson) => {
-    if (!user || !user.id) return;
-
-    // Nếu bài đã hoàn thành -> Không vào thẳng mà hiện modal hỏi ôn tập
-    if (completedLessons[lesson.id]) {
-        return; 
-    }
-
-    // 🔥 FIX LỖI: Lọc thẻ đã thuộc dựa trên danh sách CỦA USER ĐÓ
-    const userMasteredKey = `mastered_kanji_${user.id}`;
-    const localMastered = JSON.parse(localStorage.getItem(userMasteredKey) || '[]');
-    
-    const remainingCards = lesson.originalCards.filter(card => !localMastered.includes(card.kanji));
-
-    setCurrentLesson(lesson);
-    setStats({ review: 0, mastered: 0 });
-    setFinished(false);
-    setIsFlipped(false);
-    setMode('game');
-    setSessionTotal(remainingCards.length);
-
-    if (remainingCards.length === 0) {
-        setQueue([]);
-        setFinished(true);
-    } else {
-        const shuffled = [...remainingCards].sort(() => 0.5 - Math.random());
-        setQueue(shuffled);
-    }
-  };
-
-  const handleFlip = () => setIsFlipped(!isFlipped);
-
+  // 🔥 2. CẬP NHẬT TIẾN ĐỘ LÊN SUPABASE KHI "THUỘC"
   const handleRate = (level) => {
       const currentCard = { ...queue[0] };
       setIsFlipped(false);
 
-      setTimeout(() => {
+      setTimeout(async () => {
           let newQueue = queue.slice(1);
 
           if (level === 'master') {
               setStats(prev => ({ ...prev, mastered: prev.mastered + 1 }));
-              incrementKanjiCount(currentCard.kanji, currentLesson.id); 
-          } 
-          else {
-              if (level === 'forgot' || level === 'hard') {
-                  const insertIndex = Math.min(newQueue.length, 3);
-                  newQueue.splice(insertIndex, 0, currentCard);
-                  setStats(prev => ({ ...prev, review: prev.review + 1 }));
+              
+              if (!masteredList.includes(currentCard.kanji)) {
+                  const newList = [...masteredList, currentCard.kanji];
+                  setMasteredList(newList); // Cập nhật UI ngay
+
+                  // Update DB
+                  const colName = deckType === 'single' ? 'mastered_kanji' : 'mastered_jukugo';
+                  await supabase.from('users').update({ [colName]: newList }).eq('id', user.id);
+
+                  // Nếu là Kanji đơn -> Tăng điểm Rank
+                  if (deckType === 'single') {
+                      const { data } = await supabase.from('users').select('kanji_learned').eq('id', user.id).single();
+                      await supabase.from('users').update({ kanji_learned: (data?.kanji_learned || 0) + 1 }).eq('id', user.id);
+                  }
               }
-              else { 
-                  newQueue.push(currentCard);
-              }
+          } else {
+              newQueue.splice((level === 'forgot' || level === 'hard') ? Math.min(newQueue.length, 3) : newQueue.length, 0, currentCard);
+              if (level === 'forgot' || level === 'hard') setStats(prev => ({ ...prev, review: prev.review + 1 }));
           }
 
           setQueue(newQueue);
 
+          // 🔥 3. KHI HOÀN THÀNH BÀI -> LƯU VÀO DB
           if (newQueue.length === 0) {
               setFinished(true);
-              if (currentLesson && !completedLessons[currentLesson.id]) {
-                  incrementLessonCount(currentLesson.id);
-                  markLessonComplete(currentLesson.id);
+              if (!completedLessons[currentLesson.id]) {
+                  const newLessonsMap = { ...completedLessons, [currentLesson.id]: true };
+                  setCompletedLessons(newLessonsMap);
+
+                  const lessonArray = Object.keys(newLessonsMap).map(id => parseInt(id));
+                  const colLesson = deckType === 'single' ? 'completed_kanji_lessons' : 'completed_jukugo_lessons';
+                  await supabase.from('users').update({ [colLesson]: lessonArray }).eq('id', user.id);
+
+                  // Cập nhật BXH Học Tập
+                  if (deckType === 'single') {
+                      const { data } = await supabase.from('users').select('lessons_completed').eq('id', user.id).single();
+                      await supabase.from('users').update({ lessons_completed: (data?.lessons_completed || 0) + 1 }).eq('id', user.id);
+                  }
               }
           }
-      }, 200); 
+      }, 200);
   };
 
-  const handleBackToMenu = () => {
-    setMode('menu');
-    setQueue([]);
+  const getDynamicFontSize = (text) => {
+      if (!text) return 'text-8xl';
+      const len = text.length;
+      if (len === 1) return 'text-[11rem] md:text-[13rem]'; 
+      if (len === 2) return 'text-[8rem] md:text-[9.5rem]';
+      if (len === 3) return 'text-[6rem] md:text-[7.5rem]';
+      return 'text-[4rem] md:text-[5.5rem]'; 
   };
 
-  const currentCard = queue.length > 0 ? queue[0] : null;
-  const progressPercent = sessionTotal > 0 
-        ? ((sessionTotal - queue.length) / sessionTotal) * 100 
-        : 100;
-
-  const getMeaning = (card) => {
-      if (!card) return "";
-      if (typeof card.mean === 'object') {
-          return card.mean[user?.language] || card.mean.vi || card.mean.en;
-      }
-      return card.mean;
-  };
+  const progressPercent = sessionTotal > 0 ? ((sessionTotal - queue.length) / sessionTotal) * 100 : 100;
 
   return (
-    <div className="flex h-screen bg-[#Fdfdfd] font-sans text-slate-900 overflow-hidden">
-      
-      {/* MODAL XÁC NHẬN */}
+    <div className="flex h-screen bg-[#Fdfdfd] font-sans text-slate-900 overflow-hidden select-none">
       <ConfirmModal 
-          isOpen={!!lessonToReview}
-          title={`Ôn tập ${lessonToReview?.title}?`}
-          message="Bạn sẽ học lại toàn bộ từ vựng trong bài này để củng cố kiến thức. Tiến độ hoàn thành cũ vẫn được giữ nguyên."
-          onConfirm={startReview}
-          onCancel={() => setLessonToReview(null)}
+        isOpen={!!lessonToReview} 
+        title={`Học lại ${lessonToReview?.title}?`} 
+        message="Toàn bộ từ vựng sẽ được làm mới để bạn học lại từ đầu." 
+        onConfirm={() => prepareGame(lessonToReview, true)} 
+        onCancel={() => setLessonToReview(null)} 
       />
-
-      <div className="relative z-20 h-full shadow-xl">
-        <Sidebar />
-      </div>
-
+      <Sidebar />
       <main className="flex-1 h-full flex flex-col relative overflow-hidden">
-        
         {/* HEADER */}
-        <div className="px-8 py-6 z-10 bg-[#Fdfdfd] flex justify-between items-center border-b border-gray-50 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.02)] shrink-0">
+        <div className="px-8 py-4 bg-[#Fdfdfd] flex justify-between items-center border-b border-gray-100 shrink-0 h-20 shadow-sm z-50">
             {mode === 'menu' ? (
-                <div className="flex items-center gap-5 animate-fade-in-down">
-                    <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-3xl shadow-lg shadow-slate-200 transform -rotate-3 hover:rotate-0 transition-transform duration-300">
-                        🎴
+                <div className="flex flex-row items-center gap-8 w-full">
+                    <div className="flex items-center gap-4">
+                        <div className="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-lg">{Icons.card}</div>
+                        <div><h1 className="text-xl font-black text-slate-800 leading-none">LUYỆN TẬP</h1><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">FLASH CARD</p></div>
                     </div>
-                    <div className="flex flex-col">
-                        <h1 className="text-4xl text-slate-800 font-kai font-normal leading-none mb-1">
-                            {t?.flashcard_title || "Luyện Tập"}
-                        </h1>
-                        <div className="flex items-center gap-2">
-                            <div className="h-[1px] w-6 bg-gray-300"></div>
-                            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">
-                                {t?.flashcard_sub || "FLASH CARD"}
-                            </p>
-                        </div>
+                    <div className="flex bg-gray-100 p-1 rounded-2xl border border-gray-200 ml-auto">
+                        <button onClick={() => setDeckType('single')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase transition-all ${deckType === 'single' ? 'bg-white text-slate-900 shadow-sm scale-105' : 'text-gray-400 hover:text-slate-600'}`}>🀄 Kanji Đơn</button>
+                        <button onClick={() => setDeckType('jukugo')} className={`px-6 py-2 rounded-xl text-xs font-black uppercase transition-all ${deckType === 'jukugo' ? 'bg-white text-indigo-600 shadow-sm scale-105' : 'text-gray-400 hover:text-indigo-600'}`}>📚 Từ Ghép</button>
                     </div>
                 </div>
             ) : (
-                <button onClick={handleBackToMenu} className="flex items-center gap-3 text-gray-400 hover:text-slate-900 font-bold transition-all text-base group px-4 py-2 rounded-xl hover:bg-gray-50">
-                    <span className="text-2xl group-hover:-translate-x-1 transition-transform font-kai">←</span> 
-                    <span>{t?.back || "Dừng lại"}</span>
-                </button>
+                <button onClick={() => setMode('menu')} className="flex items-center gap-3 text-gray-400 hover:text-slate-900 font-black transition-all text-sm group px-6 py-2.5 rounded-2xl hover:bg-gray-100"><span className="group-hover:-translate-x-1 transition-transform">{Icons.back}</span><span>DỪNG LẠI</span></button>
             )}
         </div>
 
         {/* CONTENT */}
-        <div className="flex-1 relative bg-gray-50/50 p-4 h-full overflow-hidden flex flex-col">
-            
-            {/* 1. MENU CHỌN BÀI */}
+        <div className="flex-1 bg-gray-50/50 overflow-hidden flex flex-col">
             {mode === 'menu' && (
-                <div className="overflow-y-auto h-full pr-2 pb-20 no-scrollbar">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {generatedLessons.map((lesson) => {
-                            const isDone = completedLessons[lesson.id];
-                            const totalWords = lesson.originalCards.length;
-                            // 🔥 FIX LỖI: Chỉ đếm những từ CỦA USER NÀY đã thuộc
-                            const masteredCount = lesson.originalCards.filter(c => masteredKanjiList.includes(c.kanji)).length;
-                            const isFullyMastered = masteredCount === totalWords;
-
-                            return (
-                                <div 
-                                    key={lesson.id}
-                                    onClick={() => !isDone && handleSelectLesson(lesson)} 
-                                    className={`group p-5 rounded-[1.5rem] border transition-all cursor-pointer relative overflow-hidden ${isDone ? 'bg-green-50 border-green-200' : 'bg-white border-gray-100 hover:shadow-xl hover:-translate-y-1'}`}
-                                >
-                                    <div className="absolute -right-2 -top-2 text-[4rem] text-black/5 group-hover:text-black/10 transition-colors select-none font-kai font-normal">
-                                        {lesson.id}
-                                    </div>
-                                    <div className="relative z-10">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <span className={`inline-block px-3 py-1.5 rounded-lg text-xs font-bold ${isDone ? 'bg-green-600 text-white' : 'bg-slate-900 text-white'}`}>
-                                                {lesson.title}
-                                            </span>
-                                            
-                                            {/* NÚT ÔN TẬP */}
-                                            <div className="flex gap-2">
-                                                {isDone && (
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setLessonToReview(lesson); 
-                                                        }}
-                                                        className="w-8 h-8 rounded-full bg-white/80 hover:bg-blue-100 text-gray-400 hover:text-blue-600 flex items-center justify-center transition-colors shadow-sm"
-                                                        title="Ôn tập lại"
-                                                    >
-                                                        ↺
-                                                    </button>
-                                                )}
-                                                {isDone && <span className="text-xl">✅</span>}
-                                            </div>
+                <div className="overflow-y-auto h-full p-8 no-scrollbar pb-24">
+                    {loadingProgress ? (
+                        <div className="flex justify-center items-center h-64 text-gray-400 font-bold animate-pulse">Đang tải tiến độ từ Database...</div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                            {generatedLessons.map((lesson) => {
+                                const isDone = completedLessons[lesson.id];
+                                const mastered = lesson.originalCards.filter(c => masteredList.includes(c.kanji)).length;
+                                return (
+                                    <div key={lesson.id} onClick={() => isDone ? setLessonToReview(lesson) : prepareGame(lesson, false)} className={`group p-6 rounded-[2rem] border-2 transition-all cursor-pointer relative overflow-hidden h-56 flex flex-col justify-between ${isDone ? 'bg-green-50/40 border-green-200' : 'bg-white border-gray-100 hover:border-slate-900 hover:shadow-xl hover:-translate-y-1'}`}>
+                                        <div className="absolute -right-4 -top-6 text-[8rem] text-black/[0.02] font-black group-hover:text-black/[0.04] transition-colors select-none italic">{lesson.id}</div>
+                                        <div className="relative z-10 flex justify-between items-center">
+                                            <span className={`px-4 py-1.5 rounded-xl text-[12px] font-black uppercase tracking-widest ${isDone ? 'bg-green-600 text-white shadow-sm' : 'bg-slate-900 text-white'}`}>{lesson.title}</span>
+                                            {isDone && <button onClick={(e) => { e.stopPropagation(); setLessonToReview(lesson); }} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-green-600 shadow-sm hover:scale-110 transition-transform">{Icons.reload}</button>}
                                         </div>
-                                        
-                                        <h3 className="text-sm font-bold text-gray-600 mb-2 truncate flex items-center gap-1">
-                                            {t?.flashcard_from || "Từ"} <span className="font-kai text-lg font-normal mx-1">{lesson.desc.start}</span> 
-                                            ➝ <span className="font-kai text-lg font-normal mx-1">{lesson.desc.end}</span>
+                                        <h3 className="text-xl font-black text-slate-700 flex items-center gap-3 relative z-10">
+                                            <span className="font-kai text-4xl text-slate-900">{lesson.desc.start}</span>
+                                            <span className="text-gray-300 text-sm">➜</span>
+                                            <span className="font-kai text-4xl text-slate-900">{lesson.desc.end}</span>
                                         </h3>
-
-                                        <div className="mb-3">
-                                            <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                                <span>TIẾN ĐỘ</span>
-                                                <span>{isDone ? totalWords : masteredCount}/{totalWords}</span>
-                                            </div>
-                                            <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                <div 
-                                                    className={`h-full transition-all duration-500 ${isDone ? 'bg-green-500' : 'bg-blue-500'}`} 
-                                                    style={{ width: `${isDone ? 100 : (masteredCount / totalWords) * 100}%` }}
-                                                ></div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="flex flex-wrap gap-1 opacity-60 grayscale group-hover:grayscale-0 transition-all">
-                                            {lesson.originalCards.slice(0, 5).map((k, i) => (
-                                                <span key={i} className={`w-8 h-8 flex items-center justify-center rounded font-kai text-slate-700 text-xl border shadow-sm font-normal pb-1 ${masteredKanjiList.includes(k.kanji) ? 'bg-green-100 border-green-200 text-green-700' : 'bg-white/50 border-gray-100'}`}>
-                                                    {k.kanji}
-                                                </span>
-                                            ))}
-                                            <span className="text-xs text-gray-500 self-end font-bold ml-1 mb-1">+{lesson.originalCards.length - 5}</span>
+                                        <div className="relative z-10">
+                                            <div className="flex justify-between text-[11px] font-black text-gray-400 mb-2 uppercase tracking-tighter"><span>Tiến độ học tập</span><span>{mastered}/{lesson.originalCards.length}</span></div>
+                                            <div className="w-full h-2.5 bg-gray-100 rounded-full overflow-hidden shadow-inner"><div className={`h-full transition-all duration-700 ${isDone ? 'bg-green-500' : 'bg-indigo-500'}`} style={{ width: `${(mastered / lesson.originalCards.length) * 100}%` }}></div></div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* 2. MÀN HÌNH GAME (GIỮ NGUYÊN) */}
-            {mode === 'game' && !finished && currentCard && (
-                <div className="h-full w-full flex flex-col items-center justify-center">
-                    <div className="w-full max-w-[300px] mb-4 shrink-0">
-                        <div className="flex justify-between text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">
-                            <span>CÒN LẠI: {queue.length}</span>
-                            <span>{Math.round(progressPercent)}%</span>
+            {mode === 'game' && !finished && queue[0] && (
+                <div className="h-full w-full flex items-center justify-center p-6 gap-8 lg:px-20 overflow-hidden my-auto">
+                    <div className="flex-1 flex flex-col items-center justify-center h-full max-w-[550px] shrink-0 my-auto">
+                        <div className="w-full mb-6 shrink-0">
+                            <div className="flex justify-between text-[12px] font-black text-gray-400 mb-2 uppercase tracking-[0.3em] px-2"><span>Còn lại: {queue.length}</span><span>{Math.round(progressPercent)}%</span></div>
+                            <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden shadow-inner"><div className="h-full bg-slate-900 transition-all duration-500" style={{ width: `${progressPercent}%` }}></div></div>
                         </div>
-                        <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${progressPercent}%` }}></div>
-                        </div>
-                    </div>
 
-                    <div className="relative h-[60vh] w-auto aspect-[3/4] perspective-1000 group cursor-pointer mb-6" onClick={handleFlip}>
-                        {/* CARD MẶT TRƯỚC */}
-                        <div className={`w-full h-full duration-500 transform-style-3d card-inner relative ${isFlipped ? 'rotate-y-180' : ''}`}>
-                            <div className="absolute inset-0 bg-white rounded-[2rem] shadow-2xl border border-gray-100 flex flex-col items-center justify-center backface-hidden z-20">
-                                <span className="text-xs font-bold text-gray-300 uppercase tracking-[0.2em] absolute top-6">{t?.flashcard_flip_hint || "CHẠM ĐỂ LẬT"}</span>
-                                <h1 className="text-[10rem] md:text-[12rem] text-slate-800 font-kai font-normal leading-none mb-2 select-none">{currentCard.kanji}</h1>
-                                <p className="text-gray-500 text-xs font-bold bg-gray-100 px-3 py-1 rounded-full absolute bottom-8">{currentLesson.title}</p>
-                            </div>
-                            
-                            {/* CARD MẶT SAU */}
-                            <div className="absolute inset-0 bg-[#1a1a1a] text-white rounded-[2rem] shadow-2xl flex flex-col backface-hidden rotate-y-180 z-20 overflow-hidden">
-                                <div className="w-full h-full overflow-y-auto no-scrollbar p-6 flex flex-col">
-                                    <div className="text-center border-b border-white/10 pb-4 mb-4 shrink-0">
-                                        <h2 className="text-8xl font-kai font-normal mb-2 text-white leading-none select-none">{currentCard.kanji}</h2>
-                                        <span className="inline-block bg-yellow-400/20 text-yellow-400 px-3 py-1 rounded-lg text-xs font-black uppercase tracking-widest border border-yellow-400/20 mb-3">{currentCard.hanviet}</span>
-                                        <p className="text-xl font-bold text-white leading-tight">{getMeaning(currentCard)}</p>
-                                    </div>
-                                    <div className="flex flex-col gap-3 pb-2">
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div className="bg-white/5 p-3 rounded-xl border border-white/5"><p className="text-gray-400 text-[10px] font-bold uppercase mb-1">Kunyomi</p><p className="text-green-400 font-bold text-base break-words leading-snug">{currentCard.kunyomi || "-"}</p></div>
-                                            <div className="bg-white/5 p-3 rounded-xl border border-white/5"><p className="text-gray-400 text-[10px] font-bold uppercase mb-1">Onyomi</p><p className="text-blue-400 font-bold text-base break-words leading-snug">{currentCard.onyomi || "-"}</p></div>
+                        <div className="relative w-full h-[75vh] max-h-[650px] perspective-2000 group cursor-pointer shadow-2xl rounded-[3.5rem]" onClick={() => setIsFlipped(!isFlipped)}>
+                            <div className={`w-full h-full duration-500 transform-style-3d relative ${isFlipped ? 'rotate-y-180' : ''}`}>
+                                <div className="absolute inset-0 bg-white rounded-[3.5rem] border border-gray-100 flex flex-col items-center justify-center backface-hidden z-20 p-12 text-center overflow-hidden">
+                                    <span className="text-[12px] font-black text-gray-300 uppercase tracking-[0.5em] absolute top-10 animate-pulse">CHẠM ĐỂ LẬT</span>
+                                    <h1 className={`font-kai leading-none select-none text-slate-900 whitespace-nowrap px-4 drop-shadow-sm ${getDynamicFontSize(queue[0].kanji)}`}>{queue[0].kanji}</h1>
+                                    <p className="text-gray-400 text-xs font-black bg-gray-50 px-6 py-2 rounded-2xl absolute bottom-12 uppercase tracking-widest border border-gray-100">{currentLesson?.title}</p>
+                                </div>
+                                <div className="absolute inset-0 bg-slate-900 text-white rounded-[3.5rem] shadow-2xl flex flex-col backface-hidden rotate-y-180 z-20 border-[6px] border-slate-800 overflow-hidden">
+                                    <div className="flex-1 flex flex-col p-10 text-center justify-between min-h-0">
+                                        <div className="flex flex-col items-center">
+                                            <h2 className={`font-kai leading-none text-white opacity-30 whitespace-nowrap ${queue[0].kanji.length > 2 ? 'text-3xl' : 'text-5xl'} mb-2`}>{queue[0].kanji}</h2>
+                                            <div className="inline-block bg-yellow-500 text-slate-950 px-5 py-1 rounded-xl text-[11px] font-black uppercase tracking-widest mb-4">{queue[0].hanviet || "HÁN VIỆT"}</div>
+                                            <p className="text-3xl md:text-4xl font-black text-white leading-tight uppercase tracking-tight">{typeof queue[0].mean === 'object' ? queue[0].mean.vi || queue[0].mean.en : queue[0].mean}</p>
                                         </div>
-                                        <div className="bg-white/5 p-3 rounded-xl border border-white/5"><p className="text-gray-400 text-[10px] font-bold uppercase mb-1">{t?.flashcard_mnemonic || "GHI NHỚ"}</p><p className="text-gray-200 text-sm leading-relaxed italic">"{currentCard.detail}"</p></div>
+                                        <div className="bg-white/5 py-6 rounded-[2rem] border border-white/10 flex flex-col items-center justify-center my-4">
+                                            {deckType === 'single' ? (
+                                                <div className="w-full px-8 space-y-3">
+                                                    <div className="flex justify-between items-center"><span className="text-[10px] font-black text-gray-500 tracking-widest uppercase">KUN</span><span className="text-xl font-bold text-green-400">{queue[0].kunyomi || "-"}</span></div>
+                                                    <div className="w-full h-[1px] bg-white/10"></div>
+                                                    <div className="flex justify-between items-center"><span className="text-[10px] font-black text-gray-500 tracking-widest uppercase">ONY</span><span className="text-xl font-bold text-blue-400">{queue[0].onyomi || "-"}</span></div>
+                                                </div>
+                                            ) : (
+                                                <div className="px-4">
+                                                    <p className="text-[10px] font-black text-gray-500 tracking-[0.4em] mb-2 uppercase">CÁCH ĐỌC</p>
+                                                    <p className="text-3xl md:text-4xl font-black text-pink-400 tracking-wider leading-none uppercase">{queue[0].hiragana}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {queue[0].detail && <div className="px-2"><p className="text-gray-300 italic font-medium leading-relaxed text-sm md:text-base opacity-90 line-clamp-4">"{queue[0].detail}"</p></div>}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <div className={`grid grid-cols-5 gap-3 w-full max-w-[320px] shrink-0 transition-all duration-300 ${isFlipped ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-                        <button onClick={() => handleRate('forgot')} className="flex flex-col items-center gap-1 group"><div className="w-10 h-10 rounded-xl bg-red-100 text-red-500 flex items-center justify-center text-xl shadow-sm border border-red-200 group-hover:scale-110 transition-transform">😭</div><span className="text-[10px] font-bold text-gray-500">{t?.btn_rate_forgot || "Quên"}</span></button>
-                        <button onClick={() => handleRate('hard')} className="flex flex-col items-center gap-1 group"><div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-500 flex items-center justify-center text-xl shadow-sm border border-orange-200 group-hover:scale-110 transition-transform">😓</div><span className="text-[10px] font-bold text-gray-500">{t?.btn_rate_hard || "Khó"}</span></button>
-                        <button onClick={() => handleRate('good')} className="flex flex-col items-center gap-1 group"><div className="w-10 h-10 rounded-xl bg-yellow-100 text-yellow-600 flex items-center justify-center text-xl shadow-sm border border-yellow-200 group-hover:scale-110 transition-transform">😐</div><span className="text-[10px] font-bold text-gray-500">{t?.btn_rate_good || "Tạm"}</span></button>
-                        <button onClick={() => handleRate('easy')} className="flex flex-col items-center gap-1 group"><div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-500 flex items-center justify-center text-xl shadow-sm border border-blue-200 group-hover:scale-110 transition-transform">😊</div><span className="text-[10px] font-bold text-gray-500">{t?.btn_rate_easy || "Dễ"}</span></button>
-                        <button onClick={() => handleRate('master')} className="flex flex-col items-center gap-1 group"><div className="w-10 h-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center text-xl shadow-sm border border-green-200 group-hover:scale-110 transition-transform ring-2 ring-green-100">😎</div><span className="text-[10px] font-bold text-green-600">{t?.btn_rate_master || "Thuộc"}</span></button>
+                    <div className={`flex flex-col gap-3 w-48 shrink-0 transition-all duration-500 ${isFlipped ? 'opacity-100 translate-x-0' : 'opacity-10 translate-x-12 pointer-events-none filter grayscale'} my-auto pb-10`}>
+                        <button onClick={() => handleRate('forgot')} className="group flex items-center gap-4 p-4 bg-white rounded-2xl border-2 border-red-100 shadow-sm hover:bg-red-50 hover:border-red-400 transition-all active:scale-90"><div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 group-hover:bg-red-600 group-hover:text-white transition-colors">{Icons.forgot}</div><span className="text-[12px] font-black text-gray-400 group-hover:text-red-600 uppercase tracking-widest">QUÊN</span></button>
+                        <button onClick={() => handleRate('hard')} className="group flex items-center gap-4 p-4 bg-white rounded-2xl border-2 border-orange-100 shadow-sm hover:bg-orange-50 hover:border-orange-400 transition-all active:scale-90"><div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center shrink-0 group-hover:bg-orange-600 group-hover:text-white transition-colors">{Icons.hard}</div><span className="text-[12px] font-black text-gray-400 group-hover:text-orange-600 uppercase tracking-widest">KHÓ</span></button>
+                        <button onClick={() => handleRate('good')} className="group flex items-center gap-4 p-4 bg-white rounded-2xl border-2 border-yellow-100 shadow-sm hover:bg-yellow-50 hover:border-yellow-400 transition-all active:scale-90"><div className="w-10 h-10 rounded-xl bg-yellow-100 text-yellow-600 flex items-center justify-center shrink-0 group-hover:bg-yellow-600 group-hover:text-white transition-colors">{Icons.good}</div><span className="text-[12px] font-black text-gray-400 group-hover:text-yellow-600 uppercase tracking-widest">TẠM</span></button>
+                        <button onClick={() => handleRate('easy')} className="group flex items-center gap-4 p-4 bg-white rounded-2xl border-2 border-blue-100 shadow-sm hover:bg-blue-50 hover:border-blue-400 transition-all active:scale-90"><div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">{Icons.easy}</div><span className="text-[12px] font-black text-gray-400 group-hover:text-blue-600 uppercase tracking-widest">DỄ</span></button>
+                        <button onClick={() => handleRate('master')} className="group flex items-center gap-4 p-4 bg-emerald-50 rounded-2xl border-2 border-emerald-400 shadow-xl hover:bg-emerald-500 transition-all active:scale-95 mt-4 group"><div className="w-12 h-12 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-lg group-hover:bg-white group-hover:text-emerald-500 transition-colors">{Icons.master}</div><span className="text-sm font-black text-emerald-700 group-hover:text-white uppercase tracking-widest">THUỘC</span></button>
                     </div>
                 </div>
             )}
 
-            {/* 3. HOÀN THÀNH (GIỮ NGUYÊN) */}
             {mode === 'game' && finished && (
-                <div className="h-full flex items-center justify-center">
-                    <div className="bg-white p-10 rounded-[2.5rem] shadow-xl text-center border border-gray-100 max-w-sm w-full animate-fade-in">
-                        <div className="w-24 h-24 bg-green-500 text-white rounded-full flex items-center justify-center text-5xl mx-auto mb-6 shadow-green-200 shadow-lg"><span className="font-kai font-normal">完</span></div>
-                        <h2 className="text-2xl font-black text-slate-800 mb-2">{t?.flashcard_finish_title || "Tuyệt vời!"}</h2>
-                        <div className="bg-gray-50 p-6 rounded-2xl mb-8 flex justify-between px-8">
-                            <div className="text-center"><div className="text-3xl font-black text-slate-800">{currentLesson?.originalCards.length}</div><div className="text-xs uppercase font-bold text-gray-500 mt-1">{t?.flashcard_stat_total || "Tổng từ"}</div></div>
-                            <div className="w-[1px] bg-gray-200"></div>
-                            <div className="text-center"><div className="text-3xl font-black text-orange-500">{stats.review}</div><div className="text-xs uppercase font-bold text-gray-500 mt-1">{t?.flashcard_stat_review || "Lặp lại"}</div></div>
-                        </div>
-                        <button onClick={handleBackToMenu} className="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all text-base shadow-lg">{t?.flashcard_btn_back || "Về danh sách bài học"}</button>
-                    </div>
-                </div>
+                <div className="h-full flex items-center justify-center bg-white z-[100] animate-fade-in"><div className="text-center max-w-md p-12"><div className="w-32 h-32 bg-emerald-500 text-white rounded-[3rem] flex items-center justify-center text-6xl mx-auto mb-8 shadow-2xl shadow-emerald-200">完</div><h2 className="text-4xl font-black text-slate-800 mb-4 uppercase tracking-tighter">XUẤT SẮC!</h2><div className="grid grid-cols-2 gap-4 mb-10 bg-gray-50 p-6 rounded-[2rem] border border-gray-100 shadow-inner"><div className="text-center border-r border-gray-200"><div className="text-3xl font-black text-slate-800">{currentLesson?.originalCards.length}</div><div className="text-[11px] uppercase font-black text-gray-400 mt-1 tracking-widest">Tổng từ</div></div><div className="text-center"><div className="text-3xl font-black text-orange-500">{stats.review}</div><div className="text-[11px] uppercase font-black text-gray-400 mt-1 tracking-widest">Lặp lại</div></div></div><button onClick={() => setMode('menu')} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black hover:bg-slate-800 transition-all shadow-xl uppercase tracking-widest active:scale-95">VỀ DANH SÁCH BÀI HỌC</button></div></div>
             )}
         </div>
       </main>
 
       <style>{`
+        .font-kai { font-family: 'Yuji Syuku', serif; font-weight: 400 !important; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .font-kai { font-family: 'Yuji Syuku', serif; font-weight: 400 !important; } 
       `}</style>
     </div>
   );
