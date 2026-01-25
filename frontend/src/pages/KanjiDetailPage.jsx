@@ -8,7 +8,6 @@ import KanjiWritingModal from '../components/KanjiWritingModal';
 const KanjiDetailPage = () => {
   const { kanji } = useParams(); 
   const navigate = useNavigate();
-  // eslint-disable-next-line no-unused-vars
   const location = useLocation(); 
   const { t, user } = useAppContext(); 
 
@@ -18,19 +17,41 @@ const KanjiDetailPage = () => {
 
   useEffect(() => { window.scrollTo(0, 0); }, [kanji]);
 
-  // --- LOGIC QUAY LẠI THÔNG MINH (CONTEXT-AWARE BACK) ---
+  // --- 🔥 LOGIC QUAY LẠI CHUẨN (FIX CẢ 2 LỖI) ---
   const handleBack = () => {
-      // navigate(-1) tương đương nút Back của trình duyệt
-      // Nó giúp quay lại chính xác trang trước đó (Từ điển, Dịch thuật, hay Flashcard...)
+      // 1. Nếu có "Lệnh bài" (state.from) được truyền tới (ví dụ từ Sơ đồ truyền về)
+      // -> Thì tuân lệnh, về đúng chỗ đó. (Phá vòng lặp)
+      if (location.state?.from) {
+          navigate(location.state.from);
+          return;
+      }
+
+      // 2. Nếu không có lệnh bài -> Dùng lịch sử trình duyệt (-1)
+      // (Giải quyết được trường hợp từ Flashcard/Viết tay vào)
       if (window.history.length > 1) {
           navigate(-1);
       } else {
-          // Nếu người dùng mở trực tiếp link này (không có lịch sử) -> Về từ điển
+          // 3. Fallback cuối cùng: Nếu mở tab mới tinh -> Về từ điển
           navigate('/dictionary');
       }
   };
 
-  // Helper để lấy nghĩa theo ngôn ngữ
+  // --- 🔥 LOGIC SANG SƠ ĐỒ ---
+  const goToGraph = () => {
+      // Mẹo: Khi sang Sơ đồ, ta không dùng navigate thường.
+      // Ta tính toán trước: "Nếu lát nữa từ Sơ đồ bấm quay lại, thì phải về ĐÂU?"
+      
+      // Nếu hiện tại đang có "from" (ví dụ từ Flashcard), ta giữ nguyên nó.
+      // Nếu không, ta lấy chính trang hiện tại (location.pathname) làm đường về.
+      const returnUrl = location.state?.from || location.pathname; 
+
+      // Chuyển sang Graph và dặn dò: "Cầm lấy cái returnUrl này, lát quay về thì dùng nó nhé"
+      navigate(`/kanji-graph/${kanji}`, { 
+          state: { from: returnUrl } 
+      });
+  };
+
+  // ... (Phần Helper getMeaning và check 404 giữ nguyên) ...
   const getMeaning = (info) => {
       if (!info) return "";
       if (typeof info.mean === 'object') {
@@ -66,7 +87,7 @@ const KanjiDetailPage = () => {
         
         <div className="max-w-6xl w-full bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden relative h-[90vh] flex flex-row">
             
-            {/* --- NÚT BACK SỬ DỤNG LOGIC MỚI --- */}
+            {/* NÚT BACK */}
             <div className="absolute top-4 left-4 z-20">
                 <button onClick={handleBack} className="flex items-center gap-2 text-white/60 hover:text-white transition-all font-bold group bg-black/10 hover:bg-black/30 px-3 py-1.5 rounded-full backdrop-blur-sm">
                     <span className="text-lg group-hover:-translate-x-1 transition-transform">←</span>
@@ -74,7 +95,7 @@ const KanjiDetailPage = () => {
                 </button>
             </div>
 
-            {/* CỘT TRÁI: HIỂN THỊ KANJI LỚN */}
+            {/* CỘT TRÁI */}
             <div className="w-[35%] bg-slate-900 text-white flex flex-col items-center justify-center relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-60 h-60 bg-white opacity-5 rounded-full -mr-10 -mt-10 blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 w-40 h-40 bg-blue-500 opacity-10 rounded-full -ml-10 -mb-10 blur-3xl"></div>
@@ -89,7 +110,7 @@ const KanjiDetailPage = () => {
                 </div>
             </div>
 
-            {/* CỘT PHẢI: CHI TIẾT */}
+            {/* CỘT PHẢI */}
             <div className="w-[65%] p-6 bg-white flex flex-col h-full overflow-y-auto custom-scrollbar gap-4">
                 <div className="border-l-4 border-black pl-4">
                     <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
@@ -170,7 +191,7 @@ const KanjiDetailPage = () => {
                 
                 <div className="flex gap-3 mt-auto pt-2">
                       <button 
-                        onClick={() => navigate(`/kanji-graph/${kanjiInfo.kanji}`)} 
+                        onClick={goToGraph} 
                         className="flex-1 py-3 bg-slate-900 text-white hover:bg-slate-800 font-bold rounded-xl transition-all shadow-md hover:shadow-lg text-[10px] uppercase tracking-widest flex items-center justify-center gap-2 group"
                       >
                         🌳 {t?.detail_btn_graph || "Sơ đồ mạng lưới"}
@@ -187,7 +208,6 @@ const KanjiDetailPage = () => {
             </div>
         </div>
 
-        {/* POPUP TẬP VIẾT */}
         {showWriting && (
             <KanjiWritingModal 
                 char={kanjiInfo.kanji} 
