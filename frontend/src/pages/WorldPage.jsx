@@ -18,6 +18,23 @@ const RANK_TIERS = [
     { limit: 9999, title: "NGƯỜI MỚI NHẬP MÔN 🌱", bg: "bg-gray-100", text: "text-gray-500", border: "border-gray-200", glow: "shadow-none" }
 ];
 
+// --- BỘ ICON SVG CHẤT MẠNG XÃ HỘI ---
+const Icons = {
+    Ranking: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+    ),
+    Friends: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    ),
+    Message: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    ),
+    Forum: () => (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    )
+};
+
+// --- COMPONENTS CON GIỮ NGUYÊN (LevelBadge, RealFireAura, RankBadge) ---
 const LevelBadge = ({ level }) => {
     let style = "bg-gray-100 text-gray-500 border-gray-200";
     const l = level ? level.toUpperCase() : "N5";
@@ -101,98 +118,112 @@ const WorldPage = () => {
         }
     }, [activeTab]);
 
-    // --- 🔥 LOGIC THÔNG BÁO REALTIME (ĐÃ FIX ÉP KIỂU ID) ---
+    // --- REALTIME NOTIFICATIONS ---
     useEffect(() => {
         if (!user) return;
-
-        console.log("🟢 [REALTIME] Bắt đầu kết nối...");
-
         const channel = supabase.channel('forum_final_tracker')
-            // 1. CÓ BÀI MỚI (INSERT POSTS)
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'posts' },
-                (payload) => {
-                    // Ép kiểu về String để so sánh an toàn (vì DB là số, JS là chuỗi/số)
-                    if (String(payload.new.user_id) !== String(user.id)) {
-                        console.log("🔥 Có bài mới từ người khác!");
-                        setNotifications(prev => ({ ...prev, forum: (prev.forum || 0) + 1 }));
-                    }
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
+                if (String(payload.new.user_id) !== String(user.id)) setNotifications(prev => ({ ...prev, forum: (prev.forum || 0) + 1 }));
+            })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments' }, async (payload) => {
+                const newComment = payload.new;
+                if (String(newComment.user_id) === String(user.id)) return;
+                const { data: post } = await supabase.from('posts').select('user_id').eq('id', newComment.post_id).single();
+                if (post && String(post.user_id) === String(user.id)) setNotifications(prev => ({ ...prev, forum: (prev.forum || 0) + 1 }));
+            })
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
+                const newPost = payload.new;
+                const oldPost = payload.old;
+                if (String(newPost.user_id) === String(user.id)) {
+                    const oldLikes = JSON.stringify(oldPost.likes || []);
+                    const newLikes = JSON.stringify(newPost.likes || []);
+                    if (oldLikes !== newLikes) setNotifications(prev => ({ ...prev, forum: (prev.forum || 0) + 1 }));
                 }
-            )
-            // 2. CÓ COMMENT MỚI (INSERT COMMENTS)
-            .on(
-                'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'comments' },
-                async (payload) => {
-                    const newComment = payload.new;
-                    
-                    // Nếu chính mình comment -> Bỏ qua
-                    if (String(newComment.user_id) === String(user.id)) return;
-
-                    // Kiểm tra xem bài viết đó có phải của mình không
-                    const { data: post } = await supabase
-                        .from('posts')
-                        .select('user_id')
-                        .eq('id', newComment.post_id)
-                        .single();
-
-                    // Ép kiểu ID bài viết và User ID về String để so sánh
-                    if (post && String(post.user_id) === String(user.id)) {
-                        console.log("🔔 Ting! Có comment vào bài của mình!");
-                        setNotifications(prev => ({ ...prev, forum: (prev.forum || 0) + 1 }));
-                    }
-                }
-            )
-            // 3. CÓ LIKE/HAHA MỚI (UPDATE POSTS)
-            .on(
-                'postgres_changes',
-                { event: 'UPDATE', schema: 'public', table: 'posts' },
-                (payload) => {
-                    const newPost = payload.new;
-                    const oldPost = payload.old;
-
-                    // Chỉ quan tâm nếu bài viết là của mình
-                    if (String(newPost.user_id) === String(user.id)) {
-                        // So sánh likes cũ và mới (chuyển về chuỗi JSON để so sánh)
-                        const oldLikes = JSON.stringify(oldPost.likes || []);
-                        const newLikes = JSON.stringify(newPost.likes || []);
-
-                        if (oldLikes !== newLikes) {
-                            console.log("❤️ Ting! Có like mới!");
-                            setNotifications(prev => ({ ...prev, forum: (prev.forum || 0) + 1 }));
-                        }
-                    }
-                }
-            )
+            })
             .subscribe();
-
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        return () => { supabase.removeChannel(channel); };
     }, [user, setNotifications]);
 
     return (
         <div className="flex h-screen bg-[#Fdfdfd] font-sans text-slate-900 overflow-hidden">
             <Sidebar />
-            <main className="flex-1 h-full flex flex-col bg-slate-50/50 p-6 overflow-hidden relative">
+            <main className="flex-1 h-full flex flex-col bg-slate-50/50 relative overflow-hidden">
                 
-                {/* HEADER */}
-                <div className="flex justify-between items-end mb-6 shrink-0 relative z-10 max-w-5xl mx-auto w-full">
+                {/* --- HEADER CHẤT MẠNG XÃ HỘI --- */}
+                <div className="pt-8 px-8 pb-4 shrink-0 relative z-10 w-full max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 border-b border-gray-200/50 bg-white/80 backdrop-blur-md sticky top-0 rounded-b-[2rem] shadow-sm mb-4">
+                    
+                    {/* 1. Tiêu đề (Left) */}
                     <div>
-                        <h1 className="text-3xl font-black text-slate-800 tracking-tight mb-2 flex items-center gap-3">Thế Giới Kanji <span className="text-4xl animate-bounce">🌏</span></h1>
-                        <p className="text-gray-500 font-medium text-sm">Sảnh Danh Vọng & Cộng Đồng</p>
+                        <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                            Thế Giới Kanji <span className="text-4xl animate-bounce">🌏</span>
+                        </h1>
+                        <p className="text-gray-500 font-bold text-sm mt-1 uppercase tracking-widest pl-1">Sảnh Danh Vọng & Kết Nối</p>
                     </div>
-                    <div className="bg-white p-1 rounded-xl shadow-sm border border-gray-100 flex gap-1">
-                        <button onClick={() => handleTabChange('ranking')} className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'ranking' ? 'bg-slate-900 text-white shadow-md' : 'text-gray-400 hover:text-slate-900'}`}>🏆 BXH</button>
-                        <button onClick={handleFriendTabClick} className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'friends' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-indigo-600'}`}>🤝 Bạn Bè</button>
-                        <button onClick={() => handleTabChange('messages')} className={`relative px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'messages' ? 'bg-teal-600 text-white shadow-md' : 'text-gray-400 hover:text-teal-600'}`}>💬 Tin Nhắn {notifications?.message > 0 && <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-bold border-2 border-white animate-bounce shadow-sm">{notifications.message > 99 ? '99+' : notifications.message}</span>}</button>
-                        <button onClick={() => handleTabChange('forum')} className={`relative px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'forum' ? 'bg-pink-600 text-white shadow-md' : 'text-gray-400 hover:text-pink-600'}`}>🗨️ Diễn Đàn {notifications?.forum > 0 && <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[9px] font-bold border-2 border-white animate-bounce shadow-sm">{notifications.forum > 99 ? '99+' : notifications.forum}</span>}</button>
+
+                    {/* 2. Menu Tabs (Right) - To, Rõ, Đẹp */}
+                    <div className="flex bg-gray-100/80 p-1.5 rounded-2xl shadow-inner gap-2">
+                        {/* TAB 1: Bảng Xếp Hạng */}
+                        <button 
+                            onClick={() => handleTabChange('ranking')}
+                            className={`flex items-center gap-3 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 relative group
+                            ${activeTab === 'ranking' 
+                                ? 'bg-white text-slate-900 shadow-md ring-1 ring-black/5 scale-[1.03]' 
+                                : 'text-gray-400 hover:text-slate-700 hover:bg-white/50'
+                            }`}
+                        >
+                            <span className={`text-xl ${activeTab === 'ranking' ? 'text-yellow-500' : 'text-gray-400 group-hover:text-yellow-500'}`}><Icons.Ranking /></span>
+                            <span>Bảng Xếp Hạng</span>
+                        </button>
+
+                        {/* TAB 2: Bạn Bè */}
+                        <button 
+                            onClick={handleFriendTabClick}
+                            className={`flex items-center gap-3 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 relative group
+                            ${activeTab === 'friends' 
+                                ? 'bg-white text-indigo-600 shadow-md ring-1 ring-black/5 scale-[1.03]' 
+                                : 'text-gray-400 hover:text-indigo-600 hover:bg-white/50'
+                            }`}
+                        >
+                            <span className={`text-xl ${activeTab === 'friends' ? 'text-indigo-500' : 'text-gray-400 group-hover:text-indigo-500'}`}><Icons.Friends /></span>
+                            <span>Bạn Bè</span>
+                        </button>
+
+                        {/* TAB 3: Tin Nhắn */}
+                        <button 
+                            onClick={() => handleTabChange('messages')}
+                            className={`flex items-center gap-3 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 relative group
+                            ${activeTab === 'messages' 
+                                ? 'bg-white text-teal-600 shadow-md ring-1 ring-black/5 scale-[1.03]' 
+                                : 'text-gray-400 hover:text-teal-600 hover:bg-white/50'
+                            }`}
+                        >
+                            <div className="relative">
+                                <span className={`text-xl block ${activeTab === 'messages' ? 'text-teal-500' : 'text-gray-400 group-hover:text-teal-500'}`}><Icons.Message /></span>
+                                {notifications?.message > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold border border-white animate-bounce shadow-sm">{notifications.message > 99 ? '!' : notifications.message}</span>}
+                            </div>
+                            <span>Tin Nhắn</span>
+                        </button>
+
+                        {/* TAB 4: Diễn Đàn (Đã đổi tên & Icon Globe) */}
+                        <button 
+                            onClick={() => handleTabChange('forum')}
+                            className={`flex items-center gap-3 px-6 py-3.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 relative group
+                            ${activeTab === 'forum' 
+                                ? 'bg-white text-pink-600 shadow-md ring-1 ring-black/5 scale-[1.03]' 
+                                : 'text-gray-400 hover:text-pink-600 hover:bg-white/50'
+                            }`}
+                        >
+                            <div className="relative">
+                                <span className={`text-xl block ${activeTab === 'forum' ? 'text-pink-500' : 'text-gray-400 group-hover:text-pink-500'}`}><Icons.Forum /></span>
+                                {notifications?.forum > 0 && <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white rounded-full flex items-center justify-center text-[8px] font-bold border border-white animate-bounce shadow-sm">{notifications.forum > 99 ? '!' : notifications.forum}</span>}
+                            </div>
+                            <span>Diễn Đàn</span>
+                        </button>
                     </div>
                 </div>
 
                 {/* CONTENT AREA */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 relative z-10 w-full max-w-5xl mx-auto pb-10">
+                <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 relative z-10 w-full max-w-6xl mx-auto pb-10 px-6">
                     {activeTab === 'ranking' && (
                         loading ? <div className="flex justify-center h-64 items-center text-gray-400 font-bold animate-pulse">⏳ Đang tải dữ liệu...</div> : (
                             <div className="bg-white rounded-[2rem] border border-gray-100 shadow-xl overflow-hidden">

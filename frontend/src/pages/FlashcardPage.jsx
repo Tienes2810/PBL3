@@ -153,12 +153,11 @@ const FlashcardPage = () => {
       return 'text-[4.5rem] md:text-[6rem]'; 
   };
 
-  // 🔥 Cập nhật hàm tính cỡ chữ Menu để chống rớt dòng
   const getMenuFontSize = (text) => {
       if (text.length <= 1) return 'text-4xl';
       if (text.length <= 2) return 'text-3xl';
       if (text.length === 3) return 'text-2xl';
-      return 'text-xl'; // Cực nhỏ cho từ 4 chữ trở lên
+      return 'text-xl'; 
   };
 
   const progressPercent = sessionTotal > 0 ? ((sessionTotal - queue.length) / sessionTotal) * 100 : 100;
@@ -187,7 +186,8 @@ const FlashcardPage = () => {
 
         <div className="flex-1 bg-gray-50/50 overflow-hidden flex flex-col">
             {mode === 'menu' && (
-                <div className="overflow-y-auto h-full p-8 no-scrollbar pb-24">
+                // 🔥 Cập nhật class: Bỏ no-scrollbar, thêm custom-scrollbar và pr-4
+                <div className="overflow-y-auto h-full p-8 pr-4 custom-scrollbar pb-24">
                     {loadingProgress ? (
                         <div className="flex justify-center items-center h-64 text-gray-400 font-bold animate-pulse">Đang tải Database...</div>
                     ) : (
@@ -202,7 +202,6 @@ const FlashcardPage = () => {
                                             <span className={`px-4 py-1.5 rounded-xl text-[12px] font-black uppercase tracking-widest ${isDone ? 'bg-green-600 text-white shadow-sm' : 'bg-slate-900 text-white'}`}>{lesson.title}</span>
                                             {isDone && <button onClick={(e) => { e.stopPropagation(); setLessonToReview(lesson); }} className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-green-600 shadow-sm hover:scale-110 transition-transform">{Icons.reload}</button>}
                                         </div>
-                                        {/* CĂN CHỈNH MENU KANJI: Luôn trên 1 hàng ngang */}
                                         <div className="flex items-center justify-center gap-2 relative z-10 w-full overflow-hidden">
                                             <span className={`font-kai text-slate-900 whitespace-nowrap shrink transition-all ${getMenuFontSize(lesson.desc.start)}`}>{lesson.desc.start}</span>
                                             <span className="text-gray-300 text-sm shrink-0">➜</span>
@@ -281,13 +280,29 @@ const FlashcardPage = () => {
         </div>
       </main>
 
+      {/* 🔥 CSS TÙY CHỈNH THANH CUỘN CHO FLASHCARD */}
       <style>{`
         .font-kai { font-family: 'Yuji Syuku', serif; font-weight: 400 !important; }
         .rotate-y-180 { transform: rotateY(180deg); }
         .transform-style-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* THANH CUỘN ĐẸP */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 20px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background-color: #94a3b8;
+        }
       `}</style>
     </div>
   );

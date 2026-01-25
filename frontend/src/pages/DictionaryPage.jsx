@@ -18,7 +18,6 @@ const DictionaryPage = () => {
 
         return dictionaryData.filter(item => {
             // 1. TRA XUÔI: Tìm theo Hán Việt / Nghĩa / Kana
-            // (Ví dụ: Nhập "Mộc" -> Ra "木")
             const hanviet = item.hanviet ? item.hanviet.toLowerCase() : "";
             if (hanviet.includes(term) || normalizeVi(hanviet).includes(term)) return true;
 
@@ -29,7 +28,6 @@ const DictionaryPage = () => {
             if (item.kunyomi && item.kunyomi.toLowerCase().includes(term)) return true;
 
             // 2. TRA NGƯỢC (QUAN TRỌNG): Tìm Kanji có trong câu input
-            // (Ví dụ: Nhập "勉強しています" -> Hệ thống thấy chữ "勉" và "強" có trong chuỗi này -> Hiển thị)
             if (searchTerm.includes(item.kanji)) return true;
 
             return false;
@@ -44,7 +42,7 @@ const DictionaryPage = () => {
 
             <main className="flex-1 h-full flex flex-col relative overflow-hidden bg-slate-50/50">
                 
-                {/* HEADER ĐƠN GIẢN (Như ảnh cũ) */}
+                {/* HEADER ĐƠN GIẢN */}
                 <div className="px-8 py-6 z-20 bg-white/80 backdrop-blur-md sticky top-0 border-b border-gray-100 shadow-sm shrink-0">
                     <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div>
@@ -86,8 +84,9 @@ const DictionaryPage = () => {
                     </div>
                 </div>
 
-                {/* GRID KANJI */}
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                {/* GRID KANJI VỚI THANH CUỘN MỚI */}
+                {/* Thêm padding phải (pr-2) để nội dung không dính vào thanh cuộn */}
+                <div className="flex-1 overflow-y-auto p-8 pr-4 custom-scrollbar">
                     <div className="max-w-7xl mx-auto">
                         {filteredData.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-20">
@@ -129,7 +128,28 @@ const DictionaryPage = () => {
                     </div>
                 </div>
             </main>
-            <style>{`.custom-scrollbar::-webkit-scrollbar { display: none; } .font-kai { font-family: 'Yuji Syuku', serif; }`}</style>
+            
+            {/* CSS TÙY CHỈNH THANH CUỘN */}
+            <style>{`
+                .font-kai { font-family: 'Yuji Syuku', serif; }
+                
+                /* THANH CUỘN ĐẸP */
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 8px; /* Độ rộng thanh cuộn */
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent; /* Nền track trong suốt */
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background-color: #cbd5e1; /* Màu xám nhạt (Slate-300) */
+                    border-radius: 20px;       /* Bo tròn 2 đầu */
+                    border: 2px solid transparent; /* Tạo khoảng hở viền nếu cần */
+                    background-clip: content-box;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background-color: #94a3b8; /* Hover đậm hơn (Slate-400) */
+                }
+            `}</style>
         </div>
     );
 };
