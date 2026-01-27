@@ -25,6 +25,7 @@ import ForumPage from './pages/ForumPage';       // Trang Diễn đàn
 
 // --- 🔥 IMPORT ARENA PAGES (ĐUA NGỰA KANJI) 🔥 ---
 import ArenaLobbyPage from './pages/ArenaLobbyPage'; // Sảnh chờ, tìm trận, xếp hạng
+import ArenaPrepPage from './pages/ArenaPrepPage';   // 🔥 TRANG CHUẨN BỊ
 import KanjiRacePage from './pages/KanjiRacePage';   // Màn hình đua (Gameplay)
 
 function App() {
@@ -79,19 +80,31 @@ function App() {
 
         {/* --- 🔥 ROUTE VÕ ĐÀI (ĐUA NGỰA) 🔥 --- */}
         
+        {/* Redirect /arena sang /arena/lobby để đồng nhất URL */}
+        <Route path="/arena" element={<Navigate to="/arena/lobby" replace />} />
+
         {/* 1. Trang Sảnh chờ & Tìm trận */}
-        <Route path="/arena" element={
+        <Route path="/arena/lobby" element={
           <AuthGuard>
             <ArenaLobbyPage />
           </AuthGuard>
         } />
 
-        {/* 2. Trang Sàn đấu (Gameplay Đua Ngựa) */}
+        {/* 2. Trang Chuẩn bị */}
+        <Route path="/arena/prep" element={
+          <AuthGuard>
+            <ArenaPrepPage />
+          </AuthGuard>
+        } />
+
+        {/* 3. Trang Sàn đấu (Gameplay Đua Ngựa) */}
         <Route path="/arena/play" element={
           <AuthGuard>
             <KanjiRacePage />
           </AuthGuard>
         } />
+
+        {/* --- CÁC ROUTE KHÁC --- */}
 
         <Route path="/dictionary" element={
           <AuthGuard>
