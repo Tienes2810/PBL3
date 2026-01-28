@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import { useRaceGame } from '../hooks/useRaceGame';
+import { translations } from '../utils/translations'; // ✅ Import Translations
 
 const styles = `
     @font-face { font-family: 'DFKai-SB'; src: url('/fonts/dfkai-sb.ttf') format('truetype'); }
@@ -154,8 +155,9 @@ const MonopolyBoard = ({ players, playerPositions, totalSteps, user }) => {
 };
 
 const KanjiRacePage = () => {
-    const { user } = useAppContext();
+    const { user, language } = useAppContext();
     const navigate = useNavigate();
+    const t = translations[language] || translations.vi; // ✅ Lấy bộ từ điển
     const location = useLocation();
     
     const { matchId, players, isHost, config } = location.state || {};
@@ -207,7 +209,7 @@ const KanjiRacePage = () => {
                     {/* Nút đầu hàng bên trái */}
                     {gameState === 'RACING' && (
                         <button onClick={confirmQuit} className="absolute left-40 px-6 py-3 bg-white/90 hover:bg-red-50 border-2 border-slate-300 hover:border-red-400 rounded-2xl text-sm font-black text-slate-600 hover:text-red-600 uppercase tracking-wide transition-all shadow-lg hover:shadow-xl backdrop-blur-sm whitespace-nowrap">
-                            🏳️ Đầu hàng
+                            🏳️ {t.back}
                         </button>
                     )}
                     
@@ -241,12 +243,12 @@ const KanjiRacePage = () => {
                                         ${currentQuestion.askMode === 'READING' 
                                             ? 'text-blue-700 bg-blue-50 border-2 border-blue-200' 
                                             : 'text-green-700 bg-green-50 border-2 border-green-200'}`}>
-                                        {currentQuestion.askMode === 'READING' ? "HIRAGANA ?" : "HÁN VIỆT / NGHĨA ?"}
+                                        {currentQuestion.askMode === 'READING' ? t.hint_reading_mcq : t.hint_meaning_mcq}
                                     </div>
 
                                     {answerReveal && typeof answerReveal === 'object' && (
                                         <div className="mt-4 w-full max-w-md bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-left shadow-sm">
-                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">ĐÁP ÁN CHUẨN</div>
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t.challenge_correct_answer}</div>
                                             {answerReveal.askMode === 'MEANING' && answerReveal.detail && (
                                                 <div className="space-y-1 text-sm font-semibold text-slate-700">
                                                     <div>
@@ -299,7 +301,7 @@ const KanjiRacePage = () => {
                                                     ${feedback === 'WRONG' ? 'border-red-400 bg-red-50 text-red-600' : 
                                                       feedback === 'CORRECT' ? 'border-green-400 bg-green-50 text-green-600' :
                                                       'border-indigo-100 focus:border-indigo-400 bg-white text-slate-800'}`} 
-                                                placeholder={currentQuestion.askMode === 'READING' ? "Gõ Romaji..." : "Nhập nghĩa..."}
+                                                placeholder={currentQuestion.askMode === 'READING' ? t.hint_reading : t.hint_meaning}
                                             />
                                             
                                             <button type="submit" disabled={stunCountdown > 0 || answerReveal} 
@@ -330,11 +332,11 @@ const KanjiRacePage = () => {
                     <div className="bg-white p-10 rounded-[2.5rem] shadow-2xl border-[4px] border-slate-100 text-center w-full max-w-sm transform scale-100 hover:scale-105 transition-transform duration-500">
                         <div className="text-7xl mb-6 animate-bounce">{gameResult === 'WIN' ? '🏆' : '🐢'}</div>
                         <h2 className={`text-4xl font-black mb-4 uppercase ${gameResult === 'WIN' ? 'text-green-600' : 'text-slate-500'}`}>
-                            {gameResult === 'WIN' ? 'CHIẾN THẮNG' : 'THẤT BẠI'}
+                            {gameResult === 'WIN' ? t.arena_race_you_won : t.arena_race_you_lost}
                         </h2>
                         {gameResult === 'LOSE' && winner && (
                             <div className="mb-8 p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">NGƯỜI THẮNG</div>
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t.world_rank_1}</div>
                                 <div className="flex items-center justify-center gap-3">
                                     <img src={winner.avatar || `https://ui-avatars.com/api/?name=${winner.full_name}`} className="w-8 h-8 rounded-full border-2 border-white shadow-sm" alt=""/>
                                     <div className="text-xl font-black text-slate-800">{winner.full_name}</div>
@@ -345,7 +347,7 @@ const KanjiRacePage = () => {
                         
                         {/* [FIX 2] Điều hướng về ArenaLobbyPage */}
                         <button onClick={() => navigate('/arena/lobby')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-lg shadow-xl active:scale-95 transition-all">
-                            QUAY VỀ SẢNH
+                            {t.arena_race_back_lobby}
                         </button>
                     </div>
                 </div>

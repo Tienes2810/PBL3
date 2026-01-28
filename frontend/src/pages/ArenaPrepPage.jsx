@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { useAppContext } from '../context/AppContext'; // ✅ Import useAppContext
+import { translations } from '../utils/translations'; // ✅ Import Translations
 
 const styles = `
     @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap');
@@ -149,11 +151,13 @@ const PlayerCard = ({ player, index, side }) => {
 const ArenaPrepPage = () => {
     const navigate = useNavigate();
     const location = useLocation();
+    const { language } = useAppContext(); // ✅ Lấy language từ Context
+    const t = translations[language] || translations.vi; // ✅ Lấy bộ từ điển
     const { matchId, players, isHost } = location.state || {};
 
     const [lessonNum, setLessonNum] = useState(1);
     const [isSpinning, setIsSpinning] = useState(false);
-    const [statusText, setStatusText] = useState("ĐANG KẾT NỐI...");
+    const [statusText, setStatusText] = useState(t.arena_connecting);
     const [finalLesson, setFinalLesson] = useState(null);
     const channelRef = useRef(null);
 
@@ -173,14 +177,14 @@ const ArenaPrepPage = () => {
             .subscribe(async (status) => {
                 if (status === 'SUBSCRIBED') {
                     if (isHost) {
-                        setStatusText("CHỦ PHÒNG ĐANG CHỌN...");
+                        setStatusText(t.arena_host_choosing);
                         setTimeout(() => {
                             const randomLesson = Math.floor(Math.random() * 32) + 1;
                             channel.send({ type: 'broadcast', event: 'SPIN_START', payload: { targetLesson: randomLesson } });
                             startSpinAnimation(randomLesson);
                         }, 2000); 
                     } else {
-                        setStatusText("ĐỢI QUAY SỐ...");
+                        setStatusText(t.arena_waiting_spin);
                     }
                 }
             });
@@ -190,7 +194,7 @@ const ArenaPrepPage = () => {
 
     const startSpinAnimation = (target) => {
         setIsSpinning(true);
-        setStatusText("ĐANG QUAY NGẪU NHIÊN...");
+        setStatusText(t.arena_spinning);
         let counter = 0;
         const interval = setInterval(() => {
             setLessonNum(Math.floor(Math.random() * 32) + 1);
@@ -200,7 +204,7 @@ const ArenaPrepPage = () => {
                 setLessonNum(target);
                 setIsSpinning(false);
                 setFinalLesson(target);
-                setStatusText(`CHỦ ĐỀ: BÀI ${target}`);
+                setStatusText(`${t.arena_topic} ${target}`);
                 setTimeout(() => goToGame(target), 2000);
             }
         }, 80);
@@ -241,10 +245,10 @@ const ArenaPrepPage = () => {
                 {/* Header */}
                 <div className="mb-8 md:mb-12 text-center title-enter">
                     <div className="inline-block px-5 py-2 bg-white/20 backdrop-blur-md text-white rounded-full font-black text-xs tracking-widest border border-white/30 mb-3 shadow-lg">
-                        {matchId ? `⚔️ MATCH #${matchId.slice(-6).toUpperCase()}` : '⚔️ PRE-MATCH'}
+                        {matchId ? `⚔️ ${t.arena_match_id} #${matchId.slice(-6).toUpperCase()}` : '⚔️ PRE-MATCH'}
                     </div>
                     <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tight mb-4 drop-shadow-2xl" style={{ textShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                        CHUẨN BỊ THI ĐẤU
+                        {t.arena_prep_title}
                     </h1>
                     <div className={`inline-block px-10 py-4 rounded-2xl font-black text-sm md:text-base tracking-widest shadow-2xl transition-all duration-500 border-2 ${
                         finalLesson 

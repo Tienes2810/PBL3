@@ -393,7 +393,7 @@ const ChallengePage = () => {
                                 <span className="text-2xl">✓</span>
                             </div>
                             <div>
-                                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Đã hoàn thành</div>
+                                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">{t.challenge_completed_count}</div>
                                 <div className="text-2xl font-black text-green-600">{completedLessons.length}</div>
                             </div>
                         </div>
@@ -403,13 +403,13 @@ const ChallengePage = () => {
                                 <span className="text-2xl">🎯</span>
                             </div>
                             <div>
-                                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">Tổng số bài</div>
+                                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider">{t.challenge_total_lessons}</div>
                                 <div className="text-2xl font-black text-indigo-600">{TOTAL_LESSONS}</div>
                             </div>
                         </div>
                         <div className="ml-auto">
                             <div className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl text-white font-bold text-sm shadow-lg">
-                                {Math.round((completedLessons.length / TOTAL_LESSONS) * 100)}% Tiến độ
+                                {Math.round((completedLessons.length / TOTAL_LESSONS) * 100)}% {t.challenge_progress}
                             </div>
                         </div>
                     </div>
