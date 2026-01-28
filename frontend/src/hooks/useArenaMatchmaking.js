@@ -143,12 +143,48 @@ export const useArenaMatchmaking = (user, currentRankObj, onMatchFound) => {
     };
 
     const cancelFinding = async () => {
-        // Logic rời phòng (Optional: Xóa mình khỏi mảng JSONB - Hơi phức tạp với SQL, 
-        // tạm thời user thoát thì phòng đó treo waiting, người khác vào lấp chỗ)
-        if (channelRef.current) supabase.removeChannel(channelRef.current);
-        setStatus('IDLE');
-        setOnlineCount(0);
-        currentRoomIdRef.current = null;
+        try {
+            // Nếu đang trong phòng, xóa dữ liệu khỏi database
+            if (currentRoomIdRef.current?.roomId) {
+                const { roomId, idColumn } = currentRoomIdRef.current;
+                
+                // Lấy thông tin match hiện tại
+                const { data: match, error: fetchError } = await supabase
+                    .from('matches')
+                    .select('*')
+                    .eq(idColumn, roomId)
+                    .single();
+
+                if (!fetchError && match) {
+                    // Xóa user khỏi mảng players
+                    const updatedPlayers = match.players.filter(p => p.id !== user.id);
+                    
+                    if (updatedPlayers.length === 0) {
+                        // Nếu không còn ai, xóa match
+                        await supabase.from('matches').delete().eq(idColumn, roomId);
+                        console.log("🗑️ Deleted empty match:", roomId);
+                    } else {
+                        // Nếu còn người, cập nhật lại match
+                        await supabase
+                            .from('matches')
+                            .update({ 
+                                players: updatedPlayers,
+                                status: 'waiting' // Reset về trạng thái waiting
+                            })
+                            .eq(idColumn, roomId);
+                        console.log("✅ Removed player from match:", roomId);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("❌ Error canceling matchmaking:", error);
+        } finally {
+            // Cleanup UI state
+            if (channelRef.current) supabase.removeChannel(channelRef.current);
+            setStatus('IDLE');
+            setOnlineCount(0);
+            currentRoomIdRef.current = null;
+        }
     };
 
     useEffect(() => {

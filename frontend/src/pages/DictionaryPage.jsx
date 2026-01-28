@@ -21,6 +21,12 @@ const DictionaryPage = () => {
         const term = searchTerm.trim().toLowerCase();
         const normalizeVi = (str) => str ? str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() : "";
 
+        // ✅ Kiểm tra nếu input là số thứ tự (1-512)
+        const searchNumber = parseInt(term);
+        if (!isNaN(searchNumber) && searchNumber >= 1 && searchNumber <= dictionaryData.length) {
+            return [dictionaryData[searchNumber - 1]]; // Trả về đúng 1 item theo số thứ tự
+        }
+
         return dictionaryData.filter(item => {
             // 1. TRA XUÔI: Tìm theo Hán Việt / Nghĩa / Kana
             const hanviet = item.hanviet ? item.hanviet.toLowerCase() : "";
@@ -69,7 +75,7 @@ const DictionaryPage = () => {
                                     type="text" 
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder={t.dictionary_search_placeholder || "Tra Kanji, Hán Việt, hoặc dán cả câu..."}
+                                    placeholder={t.dictionary_search_placeholder || "Tra Kanji, Hán Việt, số thứ tự, hoặc dán cả câu..."}
                                     className="w-full pl-12 pr-10 py-3 bg-gray-100 border-2 border-transparent focus:bg-white focus:border-slate-900 rounded-2xl outline-none transition-all font-medium text-slate-700 placeholder-gray-400 shadow-sm"
                                 />
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl text-gray-400 group-focus-within:text-slate-900 transition-colors">🔍</span>
@@ -95,16 +101,25 @@ const DictionaryPage = () => {
                     <div className="max-w-7xl mx-auto">
                         {filteredData.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 pb-20">
-                                {filteredData.map((item, index) => (
-                                    <div 
-                                        key={index}
-                                        onClick={() => navigate(`/kanji/${item.kanji}`)}
-                                        className="bg-white rounded-[1.5rem] p-4 border border-gray-100 hover:border-slate-300 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group flex flex-col items-center text-center relative overflow-hidden"
-                                    >
-                                        <div className="relative z-10 w-full">
-                                            <span className="text-6xl font-kai text-slate-800 mb-2 block group-hover:scale-110 transition-transform duration-300">
-                                                {item.kanji}
-                                            </span>
+                                {filteredData.map((item, index) => {
+                                    // Tìm số thứ tự trong danh sách gốc 512 từ
+                                    const originalIndex = dictionaryData.findIndex(d => d.kanji === item.kanji) + 1;
+                                    
+                                    return (
+                                        <div 
+                                            key={index}
+                                            onClick={() => navigate(`/kanji/${item.kanji}`)}
+                                            className="bg-white rounded-[1.5rem] p-4 border border-gray-100 hover:border-slate-300 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group flex flex-col items-center text-center relative overflow-hidden"
+                                        >
+                                            {/* Số thứ tự góc trên trái */}
+                                            <div className="absolute top-2 left-2 bg-slate-100 text-slate-600 w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black group-hover:bg-slate-900 group-hover:text-white transition-colors z-20">
+                                                {originalIndex}
+                                            </div>
+                                            
+                                            <div className="relative z-10 w-full">
+                                                <span className="text-6xl font-kai text-slate-800 mb-2 block group-hover:scale-110 transition-transform duration-300">
+                                                    {item.kanji}
+                                                </span>
                                             <div className="mb-2">
                                                 <span className="inline-block bg-slate-100 text-slate-600 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest group-hover:bg-slate-900 group-hover:text-white transition-colors">
                                                     {item.hanviet}
@@ -117,13 +132,14 @@ const DictionaryPage = () => {
                                             
                                             {/* Tag báo hiệu nếu Kanji này có trong câu input */}
                                             {searchTerm.includes(item.kanji) && (
-                                                <div className="absolute top-0 right-0 bg-green-500 text-white text-[9px] font-bold px-2 py-1 rounded-bl-lg">
+                                                <div className="absolute top-2 right-2 bg-green-500 text-white text-[9px] font-bold px-2 py-1 rounded-bl-lg z-20">
                                                     ✓ {t.dictionary_found || "Tìm thấy"}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center h-64 opacity-50">
