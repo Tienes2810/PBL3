@@ -23,10 +23,9 @@ import ChallengePage from './pages/ChallengePage'; // Trang Thử thách
 import WorldPage from './pages/WorldPage';       // Trang Thế giới
 import ForumPage from './pages/ForumPage';       // Trang Diễn đàn
 
-// --- 🔥 IMPORT ARENA PAGES (ĐUA NGỰA KANJI) 🔥 ---
+// --- 🔥 IMPORT ARENA PAGES (GAME ONLINE) 🔥 ---
 import ArenaLobbyPage from './pages/ArenaLobbyPage'; // Sảnh chờ, tìm trận, xếp hạng
-import ArenaPrepPage from './pages/ArenaPrepPage';   // 🔥 TRANG CHUẨN BỊ
-import KanjiRacePage from './pages/KanjiRacePage';   // Màn hình đua (Gameplay)
+import ArenaGamePage from './pages/ArenaGamePage';   // Màn hình chơi game
 
 function App() {
   return (
@@ -90,17 +89,10 @@ function App() {
           </AuthGuard>
         } />
 
-        {/* 2. Trang Chuẩn bị */}
-        <Route path="/arena/prep" element={
-          <AuthGuard>
-            <ArenaPrepPage />
-          </AuthGuard>
-        } />
-
-        {/* 3. Trang Sàn đấu (Gameplay Đua Ngựa) */}
+        {/* 2. Trang Chơi Game */}
         <Route path="/arena/play" element={
           <AuthGuard>
-            <KanjiRacePage />
+            <ArenaGamePage />
           </AuthGuard>
         } />
 
